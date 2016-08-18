@@ -15,14 +15,14 @@
     <ClInclude Include="Analysers.cuh">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="Graph.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="IsingSpin.cuh">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="Quench.h">
       <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Graph.h">
+      <Filter>Headers\Data_Structures</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -44,10 +44,15 @@
     <CudaCompile Include="IsingSpin.cu">
       <Filter>Headers</Filter>
     </CudaCompile>
+    <CudaCompile Include="Source.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Quench.cpp">
       <Filter>Headers</Filter>
     </ClCompile>
+    <ClCompile Include="Source.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="parameters.txt" />
   </ItemGroup>
 </Project>
