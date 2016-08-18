@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{4d0a9bd7-2834-44da-9159-1e4bdbce07a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers\Data_Structures">
+      <UniqueIdentifier>{942b5a5a-8220-4894-aacb-450b823f03df}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DataStructures.h">
+      <Filter>Headers\Data_Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="Analysers.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Graph.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="IsingSpin.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Quench.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="JaggedList.cu">
+      <Filter>Headers\Data_Structures</Filter>
+    </CudaCompile>
+    <CudaCompile Include="JaggedListShared.cu">
+      <Filter>Headers\Data_Structures</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Matrix.cu">
+      <Filter>Headers\Data_Structures</Filter>
+    </CudaCompile>
+    <CudaCompile Include="MatrixShared.cu">
+      <Filter>Headers\Data_Structures</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Analysers.cu">
+      <Filter>Headers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="IsingSpin.cu">
+      <Filter>Headers</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Quench.cpp">
+      <Filter>Headers</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
