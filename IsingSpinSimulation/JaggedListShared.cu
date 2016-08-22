@@ -3,7 +3,7 @@
 using namespace kspace;
 
 template <class elem_type> 
-JaggedListShared::JaggedListShared( const size_t N, const size_t* lengths )
+JaggedListShared::JaggedListShared( const uint32_t N, const uint32_t* lengths )
 {
 	host = new JaggedList( N, lengths, MemoryLocation::host );
 	intermediary = new JaggetList( N, lengths, MemoryLocation::device );
@@ -12,9 +12,9 @@ JaggedListShared::JaggedListShared( const size_t N, const size_t* lengths )
 	
 	cudaMemcpy( intermediary->_memloc, host->_memloc, sizeof( MemoryLocation ), cudaMemcpyHostToDevice );
 	cudaMemcpy( intermediary->_data, host->_data, sizeof( elem_type )*host->size(), cudaMemcpyHostToDevice );
-	cudaMemcpy( intermediary->_length, host->_length, sizeof( size_t ), cudaMemcpyHostToDevice );
-	cudaMemcpy( intermediary->_lengths, host->_lengths, sizeof( size_t )*host->length(), cudaMemcpyHostToDevice );
-	cudaMemcpy( intermediary->_offsets, host->_offsets, sizeof( size_t )*( host->length() + 1 ), cudaMemcpyHostToDevice );
+	cudaMemcpy( intermediary->_length, host->_length, sizeof( uint32_t ), cudaMemcpyHostToDevice );
+	cudaMemcpy( intermediary->_lengths, host->_lengths, sizeof( uint32_t )*host->length(), cudaMemcpyHostToDevice );
+	cudaMemcpy( intermediary->_offsets, host->_offsets, sizeof( uint32_t )*( host->length() + 1 ), cudaMemcpyHostToDevice );
 }
 
 template <class elem_type>

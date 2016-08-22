@@ -7,6 +7,9 @@
     <Filter Include="Headers\Data_Structures">
       <UniqueIdentifier>{942b5a5a-8220-4894-aacb-450b823f03df}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Headers\Data_Structures\Graph">
+      <UniqueIdentifier>{c053b114-c193-4dec-8809-f519c769d2e9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataStructures.h">
@@ -22,7 +25,7 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="Graph.h">
-      <Filter>Headers\Data_Structures</Filter>
+      <Filter>Headers\Data_Structures\Graph</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -51,6 +54,9 @@
       <Filter>Headers</Filter>
     </ClCompile>
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="Graph_Parameters.cpp">
+      <Filter>Headers\Data_Structures\Graph</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="parameters.txt" />

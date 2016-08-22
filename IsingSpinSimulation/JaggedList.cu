@@ -4,37 +4,37 @@
 using namespace kspace;
 
 template <class elem_type>
-JaggedList<elem_type>::JaggedList( const size_t N, const size_t* lengths, const MemoryLocation memloc )
+JaggedList<elem_type>::JaggedList( const uint32_t N, const uint32_t* lengths, const MemoryLocation memloc )
 {
-	size_t* tmpoffsets = new size_t[ N + 1 ]();
+	uint32_t* tmpoffsets = new uint32_t[ N + 1 ]();
 	std::partial_sum( lengths, lengths + N, tmpoffsets + 1 );
 
 	if ( memloc == MemorLocation::host )
 	{
 		_memloc = new MemoryLocation();
 		_data = new elem_type[ tmpoffsets[ N ] ]();
-		_length = new size_t();
-		_lengths = new size_t[ N ]();
-		_offsets = new size_t[ N + 1 ]();
+		_length = new uint32_t();
+		_lengths = new uint32_t[ N ]();
+		_offsets = new uint32_t[ N + 1 ]();
 
 		( *_memloc ) = memloc;
 		( *_length ) = N;
-		memcpy( _lengths, lengths, sizeof( size_t )*N );
-		memcpy( _offsets, tmpoffsets, sizeof( size_t )*( N + 1 ) );
+		memcpy( _lengths, lengths, sizeof( uint32_t )*N );
+		memcpy( _offsets, tmpoffsets, sizeof( uint32_t )*( N + 1 ) );
 	}
 	else if ( memloc == MemoryLocation::device )
 	{
 		HANDLE_ERROR( cudaMalloc( (void**) &_memloc, sizeof( MemoryLocation ) ) );
 		HANDLE_ERROR( cudaMalloc( (void**) &_data, sizeof( elem_type )*( tmpoffsets[ N ] ) ) );
-		HANDLE_ERROR( cudaMalloc( (void**) &_length, sizeof( size_t ) ) );
-		HANDLE_ERROR( cudaMalloc( (void**) &_lengths, sizeof( size_t )*N ) );
-		HANDLE_ERROR( cudaMalloc( (void**) &_offsets, sizeof( size_t )*( N + 1 ) ) );
+		HANDLE_ERROR( cudaMalloc( (void**) &_length, sizeof( uint32_t ) ) );
+		HANDLE_ERROR( cudaMalloc( (void**) &_lengths, sizeof( uint32_t )*N ) );
+		HANDLE_ERROR( cudaMalloc( (void**) &_offsets, sizeof( uint32_t )*( N + 1 ) ) );
 
 		HANDLE_ERROR( cudaMemcpy( _memloc, &memloc, sizeof( MemoryLocation ), cudaMemcpyHostToDevice ) );
 		HANDLE_ERROR( cudaMemset( _data, 0, sizeof( elem_type ) * tmpoffsets[N] ) );
-		HANDLE_ERROR( cudaMemcpy( _length, &N, sizeof( size_t ), cudaMemcpyHostToDevice ) );
-		HANDLE_ERROR( cudaMemcpy( _lengths, lengths, sizeof( size_t ) * N, cudaMemcpyHostToDevice ) );
-		HANDLE_ERROR( cudaMemcpy( _offsets, tmpoffsets, sizeof( size_t ) * (N+1), cudaMemcpyHostToDevice ) );
+		HANDLE_ERROR( cudaMemcpy( _length, &N, sizeof( uint32_t ), cudaMemcpyHostToDevice ) );
+		HANDLE_ERROR( cudaMemcpy( _lengths, lengths, sizeof( uint32_t ) * N, cudaMemcpyHostToDevice ) );
+		HANDLE_ERROR( cudaMemcpy( _offsets, tmpoffsets, sizeof( uint32_t ) * (N+1), cudaMemcpyHostToDevice ) );
 	}
 
 	delete[] tmpoffsets;
@@ -68,40 +68,40 @@ CUDA_CALLABLE_MEMBER MemoryLocation JaggedList<elem_type>::memLoc() const
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER elem_type JaggedList<elem_type>::get( const size_t row, const size_t col ) const
+CUDA_CALLABLE_MEMBER elem_type JaggedList<elem_type>::get( const uint32_t row, const uint32_t col ) const
 {
 	assert( row >= 0 && row < length() && col >= 0 && col < lengths(row) );
 	return _data[ offset( row ) + col ];
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER void JaggedList<elem_type>::set( const size_t row, const size_t col, const elem_type val)
+CUDA_CALLABLE_MEMBER void JaggedList<elem_type>::set( const uint32_t row, const uint32_t col, const elem_type val)
 {
 	assert( row >= 0 && row < length() && col >= 0 && col < lengths( row ) );
 	_data[ offset( row ) + col ] = val;
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER size_t JaggedList<elem_type>::length() const
+CUDA_CALLABLE_MEMBER uint32_t JaggedList<elem_type>::length() const
 {
 	return *_length;
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER size_t JaggedList<elem_type>::size() const
+CUDA_CALLABLE_MEMBER uint32_t JaggedList<elem_type>::size() const
 {
 	return _offsets[ length() ];
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER size_t JaggedList<elem_type>::length( const size_t row ) const
+CUDA_CALLABLE_MEMBER uint32_t JaggedList<elem_type>::length( const uint32_t row ) const
 {
 	assert( row >= 0 && row < length() );
 	return *_lengths[ row ];
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER size_t JaggedList<elem_type>::offset( const size_t row ) const
+CUDA_CALLABLE_MEMBER uint32_t JaggedList<elem_type>::offset( const uint32_t row ) const
 {
 	assert( row >= 0 && row < length() );
 	return *_offsets[row];
