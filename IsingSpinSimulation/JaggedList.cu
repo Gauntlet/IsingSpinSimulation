@@ -70,14 +70,22 @@ CUDA_CALLABLE_MEMBER MemoryLocation JaggedList<elem_type>::memLoc() const
 template <class elem_type>
 CUDA_CALLABLE_MEMBER elem_type JaggedList<elem_type>::get( const uint32_t row, const uint32_t col ) const
 {
-	assert( row >= 0 && row < length() && col >= 0 && col < lengths(row) );
+	if (row < 0 || row >= numOfRows() || col <= 0 || col >= numOfCols())
+	{
+		throw std::invalid_argument("jagged list indices out of bounds")
+	}
+
 	return _data[ offset( row ) + col ];
 }
 
 template <class elem_type>
 CUDA_CALLABLE_MEMBER void JaggedList<elem_type>::set( const uint32_t row, const uint32_t col, const elem_type val)
 {
-	assert( row >= 0 && row < length() && col >= 0 && col < lengths( row ) );
+	if (row < 0 || row >= numOfRows() || col <= 0 || col >= numOfCols())
+	{
+		throw std::invalid_argument("jagged list indices out of bounds")
+	}
+
 	_data[ offset( row ) + col ] = val;
 }
 
@@ -96,13 +104,21 @@ CUDA_CALLABLE_MEMBER uint32_t JaggedList<elem_type>::size() const
 template <class elem_type>
 CUDA_CALLABLE_MEMBER uint32_t JaggedList<elem_type>::length( const uint32_t row ) const
 {
-	assert( row >= 0 && row < length() );
+	if (row < 0 || row >= numOfRows())
+	{
+		throw std::invalid_argument("jagged list rows index out of bounds")
+	}
+
 	return *_lengths[ row ];
 }
 
 template <class elem_type>
 CUDA_CALLABLE_MEMBER uint32_t JaggedList<elem_type>::offset( const uint32_t row ) const
 {
-	assert( row >= 0 && row < length() );
+	if (row < 0 || row >= numOfRows())
+	{
+		throw std::invalid_argument("jagged list rows index out of bounds")
+	}
+
 	return *_offsets[row];
 }

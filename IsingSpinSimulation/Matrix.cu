@@ -74,14 +74,22 @@ CUDA_CALLABLE_MEMBER Matrix::MemoryLocation memLoc() const
 template<class elem_type>
 CUDA_CALLABLE_MEMBER elem_type Matrix::get( const uint32_t row, const uint32_t col ) const
 {
-	assert( row >= 0 && row < numOfRows() && col >= 0 && col < numOfCols() );
+	if (row < 0 || row >= numOfRows() || col <= 0 || col >= numOfCols())
+	{
+		throw std::invalid_argument("matrix indices out of bounds")
+	}
+
 	return _data[ row * numOfColumns() + col ];
 }
 
 template<class elem_type>
 CUDA_CALLABLE_MEMBER void Matrix::set( const uint32_t row, const uint32_t col, const elem_type value )
 {
-	assert( row >= 0 && row < numOfRows() && col >= 0 && col < numOfCols() );
+	if (row < 0 || row >= numOfRows() || col <= 0 || col >= numOfCols())
+	{
+		throw std::invalid_argument("matrix indices out of bounds")
+	}
+
 	_data[ row * numOfColumns() + col ] = value;
 }
 

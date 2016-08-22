@@ -3,7 +3,7 @@
 
 #include <cuda_runtime.h>
 #include <iostream>
-#include <assert.h>
+#include <stdexcept>
 #include <cstdint>
 
 #ifdef __CUDA_ARCH__
@@ -19,6 +19,7 @@ static void HandleError( cudaError_t err, const char *file, int line )
 		exit( EXIT_FAILURE );
 	}
 }
+
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 
 namespace kspace
