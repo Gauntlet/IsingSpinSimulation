@@ -3,6 +3,7 @@
 #include "DataStructures.h"
 #include <cstdint>
 #include <cassert>
+#include <string>
 
 namespace kspace
 {
@@ -102,23 +103,49 @@ namespace kspace
 			};
 		};
 
+		/*
+			Make Graph a derived class of JaggedList and Matrix.
+			Setting the parents to private.
+			Then it should be easier to deal with the host and device behaviour.
+		*/
 
 		class Graph
 		{
 		private:
 			Matrix<std::uint8_t> _adjmat;
 			JaggedList<std::uint32_t> _adjlist;
+
+			MemoryLocation _memloc;
 		public:
+
+			Graph(const std::string fname, const MemoryLocation memloc);
+
 			Parameters::parameters_t parameters;
 
+			uint32_t numOfNodes() const;
+			uint32_t degree(const uint32_t v) const;
+
 			bool is_connected(const uint32_t v, const uint32_t w) const;
+			uint32_t neighbour(const uint32_t v, const uint32_t neighbour_k) const;
 
-			uint32_t neighbour_k(const uint32_t v, const uint32_t k) const;
-
-
+			MemoryLocation memory_location() const;
 		};
-	}
-	
+
+		class GraphShared
+		{
+		private:
+			Graph *intermediary;
+		public:
+			Graph *host;
+			Graph *device;
+
+			GraphShared(const std::string fname);
+			~GraphShared();
+
+			void host2device();
+			void device2host();
+		};
+	}	
 }
 
 #endif

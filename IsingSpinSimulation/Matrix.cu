@@ -47,7 +47,7 @@ template<class elem_type> Matrix::Matrix( const uint32_t M, const uint32_t N, co
 
 template<class elem_type> Matrix::~Matrix()
 {
-	if ( memLoc() == MemoryLocation::host )
+	if ( memory_location() == MemoryLocation::host )
 	{
 		delete _memloc;
 		delete[] _data;
@@ -55,7 +55,7 @@ template<class elem_type> Matrix::~Matrix()
 		delete _numOfCols;
 		delete _numOfRows;
 	}
-	else if ( memLoc() == MemroyLoc::device )
+	else if ( memory_location() == MemroyLoc::device )
 	{
 		HANDLE_ERROR( cudaFree( _memloc ) );
 		HANDLE_ERROR( cudaFree( _data ) );
@@ -66,7 +66,7 @@ template<class elem_type> Matrix::~Matrix()
 }
 
 template<class elem_type>
-CUDA_CALLABLE_MEMBER Matrix::MemoryLocation memLoc() const
+CUDA_CALLABLE_MEMBER Matrix::MemoryLocation memory_location() const
 {
 	return *_memloc;
 }

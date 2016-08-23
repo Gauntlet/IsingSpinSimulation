@@ -43,7 +43,7 @@ JaggedList<elem_type>::JaggedList( const uint32_t N, const uint32_t* lengths, co
 template <class elem_type>
 JaggedList<elem_type>::~JaggedList()
 {
-	if ( memLoc() == MemorLocation::host )
+	if ( memory_location() == MemorLocation::host )
 	{
 		delete _memloc;
 		delete[] _data;
@@ -51,7 +51,7 @@ JaggedList<elem_type>::~JaggedList()
 		delete[] _lengths;
 		delete[] _offsets;
 	}
-	else if ( memLoc() == MemoryLocation::device )
+	else if ( memory_location() == MemoryLocation::device )
 	{
 		HANDLE_ERROR( cudaFree( _memloc ) );
 		HANDLE_ERROR( cudaFree( _data ) );
@@ -62,7 +62,7 @@ JaggedList<elem_type>::~JaggedList()
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER MemoryLocation JaggedList<elem_type>::memLoc() const
+CUDA_CALLABLE_MEMBER MemoryLocation JaggedList<elem_type>::memory_location() const
 {
 	return *_memloc;
 }

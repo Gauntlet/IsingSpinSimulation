@@ -45,7 +45,7 @@ namespace kspace
 
 		~Matrix();
 
-		CUDA_CALLABLE_MEMBER MemoryLocation memLoc() const;
+		CUDA_CALLABLE_MEMBER MemoryLocation memory_location() const;
 		CUDA_CALLABLE_MEMBER elem_type get( const uint32_t row, const uint32_t col ) const;
 		CUDA_CALLABLE_MEMBER void set( const uint32_t row, const uint32_t col, const elem_type value );
 
@@ -88,7 +88,7 @@ namespace kspace
 
 		~JaggedList();
 
-		CUDA_CALLABLE_MEMBER MemoryLocation memLoc() const;
+		CUDA_CALLABLE_MEMBER MemoryLocation memory_location() const;
 		CUDA_CALLABLE_MEMBER elem_type get( const uint32_t row, const uint32_t col ) const;
 		CUDA_CALLABLE_MEMBER void set( const uint32_t row, const uint32_t col, const elem_type val );
 
