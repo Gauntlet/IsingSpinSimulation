@@ -5,11 +5,82 @@
 #include <cassert>
 #include <string>
 
+/*///////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////GRAPH FILE STRUCTURE///////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+
+	|---------------------------------------------------------------------------------------|
+	|	OFFSET	|		HEADER FIELD		|	SIZE (B)	|	TYPE		|	VALUE		|
+	|---------------------------------------------------------------------------------------|
+	|	0		|	FILE ID					|		8		|	char		|	xKGRAPHx	|
+	|	8		|	Major Version			|		1		|	uint8_t		|	1			|
+	|	9		|	Minor Version			|		1		|	uint8_t		|	0			|
+	|	10		|	Data Offset				|		2		|	uint16_t	|	42			|
+	|	12		|	Data Size (B)			|		4		|	uint32_t	|	D=4(N+2M+Z)	|
+	|	16		|	Graph Type				|		2		|	uint16_t	|	G			|
+	|	18		|	Number of Nodes in Graph|		4		|	uint32_t	|	N			|
+	|	22		|	Number of Nodes in File	|		4		|	uint32_t	|	M			|
+	|	26		|	Number of Neighbours	|		4		|	uint32_t	|	Z			|
+	|---------------------------------------------------------------------------------------|
+	|				The rest of the header depends on the value of Graph Type				|
+	|---------------------------------------------------------------------------------------|
+	|										Rectangular Lattice								|
+	|---------------------------------------------------------------------------------------|
+	|	30		|	Width					|		4		|	uint32_t	|				|
+	|	34		|	Height					|		4		|	uint32_t	|				|
+	|	38		|	Padding					|		4		|	char[4]		|				|
+	|---------------------------------------------------------------------------------------|
+	|										  Circular Lattice								|
+	|---------------------------------------------------------------------------------------|
+	|	30		|	Degree Per Nodes		|		4		|	uint32_t	|	0<=K<=N		|
+	|	34		|	Padding					|		8		|	char[8]		|				|
+	|---------------------------------------------------------------------------------------|
+	|											Erdos-Renyi									|
+	|---------------------------------------------------------------------------------------|
+	|	30		|	Seed					|		4		|	uint32_t	|				|
+	|	34		|	Wiring Probability		|		4		|	float		|	0<=p_w<=1	|
+	|	38		|	Padding					|		4		|	char[4]		|				|
+	|---------------------------------------------------------------------------------------|
+	|										  Watts-Strogatz								|
+	|---------------------------------------------------------------------------------------|
+	|	30		|	Seed					|		4		|	uint32_t	|				|
+	|	34		|	Degree Per Nodes		|		4		|	uint32_t	|	0<=K<=N		|
+	|	38		|	Wiring Probability		|		4		|	float		|	0<=p_w<=1	|
+	|---------------------------------------------------------------------------------------|
+	|										  Barabasi-Albert								|
+	|---------------------------------------------------------------------------------------|
+	|	30		|	Seed					|		4		|	uint32_t	|				|
+	|	34		|	Initial Number of Nodes	|		4		|	uint32_t	|		M		|
+	|	38		|	Degree Per Nodes		|		4		|	uint32_t	|	0<=K<=M		|
+	|---------------------------------------------------------------------------------------|
+	|---------------------------------------------------------------------------------------|
+	|---------------------------------------------------------------------------------------|
+	|	OFFSET	|		DATA FIELD			|	SIZE (B)	|	TYPE		|	VALUE		|
+	|---------------------------------------------------------------------------------------|
+	| 42		|	Degrees					|	   4N		|	uint32_t[N]	|	uint32_t	|
+	| 42+4N		|	Vertex IDs				|	   4M		|	int32_t[M]	|	int32_t		|
+	| 42+4(N+M) |	Neighbour Offsets		|	   4M		|	uint32_t[M]	|	uint32_t	|
+	| 42+4(N+2M)|	Neighbour IDs			|	   4Z		|	int32_t[Z]	|	int32_t		|
+	|---------------------------------------------------------------------------------------|
+
+//////////////////////////////////////NOTES//////////////////////////////////////////
+
+		- Both directed and undirected graphs can be stored.
+		- The values of M and N is dependent on the graph.
+		- Neighbour IDs is a jagged list of neighbours.
+		- Directed edges are indicated by a negative Neighbour ID. Undirected edges
+		  are indicated by positive Neighbour IDs.
+		- Each edge appears only once. Given an edge {n,m} then for Node ID n the
+		  Neighbour ID 'm' only appears if m>=n.
+		  
+
+*////////////////////////////////////////////////////////////////////////////////////
+
 namespace kspace
 {
 	namespace Graph
 	{
-		enum class Type
+		enum class Type : std::uint8_t
 		{
 			Rectangular_Lattice, Circular_Lattice, Erdos_Renyi, Watts_Strogatz, Barabasi_Albert
 		};
@@ -103,30 +174,26 @@ namespace kspace
 			};
 		};
 
-		/*
-			Make Graph a derived class of JaggedList and Matrix.
-			Setting the parents to private.
-			Then it should be easier to deal with the host and device behaviour.
-		*/
-
 		class Graph
 		{
 		private:
-			Matrix<std::uint8_t> _adjmat;
-			JaggedList<std::uint32_t> _adjlist;
+			MemoryLocation *_memLoc;
 
-			MemoryLocation _memloc;
+			std::uint8_t *_adjmat;
+			std::uint32_t *_adjlist;
+			std::uint32_t *_degrees;
+			std::uint32_t *_offsets;
 		public:
 
-			Graph(const std::string fname, const MemoryLocation memloc);
+			Parameters::parameters_t *parameters;
 
-			Parameters::parameters_t parameters;
+			Graph(const std::string fname, const MemoryLocation memloc);
 
 			uint32_t numOfNodes() const;
 			uint32_t degree(const uint32_t v) const;
 
 			bool is_connected(const uint32_t v, const uint32_t w) const;
-			uint32_t neighbour(const uint32_t v, const uint32_t neighbour_k) const;
+			uint32_t neighbour(const uint32_t v, const uint32_t kth_neighbour) const;
 
 			MemoryLocation memory_location() const;
 		};

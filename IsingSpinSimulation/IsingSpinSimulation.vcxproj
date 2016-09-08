@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Analysers.cu" />
+    <CudaCompile Include="Graph.cu" />
     <CudaCompile Include="IsingSpin.cu" />
     <CudaCompile Include="JaggedList.cu" />
     <CudaCompile Include="JaggedListShared.cu" />
@@ -30,6 +31,7 @@
   <ItemGroup>
     <ClInclude Include="Analysers.cuh" />
     <ClInclude Include="DataStructures.h" />
+    <ClInclude Include="File_IO.h" />
     <ClInclude Include="Graph.h" />
     <ClInclude Include="IsingSpin.cuh" />
     <ClInclude Include="Quench.h" />

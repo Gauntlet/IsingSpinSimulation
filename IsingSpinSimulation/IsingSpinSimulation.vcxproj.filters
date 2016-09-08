@@ -13,6 +13,9 @@
     <Filter Include="Headers\Data_Structures\Array_Structures">
       <UniqueIdentifier>{af501bec-d2a5-4ebe-906b-0d99c425dde0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Headers\File_IO">
+      <UniqueIdentifier>{7fd9a565-5beb-48f3-bbb3-9ae19e0b3098}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Analysers.cuh">
@@ -29,6 +32,9 @@
     </ClInclude>
     <ClInclude Include="DataStructures.h">
       <Filter>Headers\Data_Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="File_IO.h">
+      <Filter>Headers\File_IO</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -50,6 +56,9 @@
     </CudaCompile>
     <CudaCompile Include="Analysers.cu">
       <Filter>Headers\Data_Structures\Array_Structures</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Graph.cu">
+      <Filter>Headers\Data_Structures\Graph</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
