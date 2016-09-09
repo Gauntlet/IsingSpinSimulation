@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Graph_Parameters.cpp" />
+    <ClCompile Include="Parameters.cpp" />
     <ClCompile Include="Quench.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>

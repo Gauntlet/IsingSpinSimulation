@@ -1,9 +1,12 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 #include "DataStructures.h"
+#include "File_IO.h"
 #include <cstdint>
 #include <cassert>
 #include <string>
+#include <sstream>
+#include <map>
 
 /*///////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////GRAPH FILE STRUCTURE///////////////////////////////////
@@ -80,98 +83,75 @@ namespace kspace
 {
 	namespace Graph
 	{
-		enum class Type : std::uint8_t
+		enum Type : std::uint32_t
 		{
-			Rectangular_Lattice, Circular_Lattice, Erdos_Renyi, Watts_Strogatz, Barabasi_Albert
+			RECTANGULAR_LATTICE, CIRCULAR_LATTICE, ERDOS_RENYI, WATTS_STROGATZ, BARABASI_ALBERT
 		};
 
-		namespace Parameters
+		typedef std::string parameter_t;
+
+		class Parameters
 		{
-			class parameters_t
-			{
-			private:
-				Type _type;
-
-			protected:
-				uint32_t _numOfNodes;
-
+		public:
+			static class cast {
 			public:
-				parameters_t(const Type type, const uint32_t numOfNodes) : _type(type), _numOfNodes(numOfNodes) {};
-
-				Type type() const;
-				uint32_t numOfNodes() const;
+				typedef std::int32_t number_of_nodes_t, width_t, height_t, number_of_degrees_t, initial_number_of_nodes_t;
+				typedef float wiring_probability_t, rewiring_probability_t;
 			};
 
+			enum class key { TYPE, NUMBER_OF_NODES, WIDTH, HEIGHT, NUMBER_OF_DEGREES, WIRING_PROBABILITY, REWIRING_PROBABILITY, INITIAL_NUMBER_OF_NODES };
 
-			class Rectangular_Lattice : public parameters_t
-			{
-			private:
-				uint32_t _width;
-				uint32_t _height;
+			Parameters(const Type type, const std::int32_t number_of_nodes, const std::int32_t width, const std::int32_t height);
+			Parameters(const Type type, const std::int32_t number_of_nodes, const std::int32_t number_of_degrees);
+			Parameters(const Type type, const std::int32_t number_of_nodes, const float wiring_probability);
+			Parameters(const Type type, const std::int32_t number_of_nodes, const std::int32_t number_of_degrees, const float rewiring_probability);
+			Parameters(const Type type, const std::int32_t number_of_nodes, const std::int32_t initial_number_of_nodes, const std::int32_t number_of_degrees);
 
-			public:
-				Rectangular_Lattice::Rectangular_Lattice(const uint32_t width, const uint32_t height) : parameters_t(Type::Rectangular_Lattice, width * height), _width(width), _height(height) {};
+			parameter_t operator()(const key parameter) const;
 
-				uint32_t width() const;
-				uint32_t height() const;
-			};
+			void read(FileHandle &file);
+			void write(FileHandle &file);
+		private:
+			Type _type;
+			std::int32_t _numOfNodes;
+			std::map<key, std::string> _parameters;
+		} parameters;
 
+		template <class T> T parameter_cast(const parameter_t &parameter_value)
+		{
+			std::stringstream ss;
+			ss << parameter_value;
 
-			class Circular_Lattice : public parameters_t
-			{
-			private:
-				uint32_t _numOfDegreesPerNode;
+			T value;
+			ss >> value;
 
-			public:
-				Circular_Lattice(const uint32_t numOfNodes, const uint32_t numOfDegreesPerNode);
+			return value;
+		}
 
-				uint32_t numOfDegreesPerNode() const;
-			};
+		template <class T> parameter_t parameter_cast(const T &parameter_value)
+		{
+			return std::to_string(parameter_value);
+		}
 
+		struct GraphHeader
+		{
+			char file_type[8];
+			std::uint8_t version[2];
+			std::uint16_t data_offset;
+			std::uint32_t data_size;
+			std::uint16_t graph_type;
+			std::uint32_t num_of_nodes_in_graph;
+			std::uint32_t num_of_nodes_in_file;
+			std::uint32_t num_of_neighbours;
+			Parameters parameters;
+		};
 
-			static struct Erdos_Renyi : public parameters_t
-			{
-			private:
-				double _wiringProbability;
-				uint32_t _seed;
-
-			public:
-				Erdos_Renyi(const uint32_t numOfnodes, const double wiringProbability, const uint32_t seed) : parameters_t(Type::Erdos_Renyi, numOfNodes), _wiringProbability(wiringProbability), _seed(seed) {};
-				
-				double wiringProbability() const;
-				uint32_t seed() const;
-			};
-
-
-			class Watts_Strogatz : public parameters_t
-			{
-			private:
-				uint32_t _numOfDegreesPerNode;
-				double _rewiringProbability;
-				uint32_t _seed;
-
-			public:
-				Watts_Strogatz(const uint32_t numOfNodes, const uint32_t numOfDegreesPerNode, const double rewiringProbability, const uint32_t seed);
-				
-				uint32_t numOfDegreesPerNode() const;
-				double rewiringProbability() const;
-				uint32_t seed() const;
-			};
-
-
-			class Barabasi_Albert : public parameters_t
-			{
-			private:
-				uint32_t _initNumOfNodes;
-				uint32_t _numOfDegreesPerNode;
-				uint32_t _seed;
-			public:
-				Barabasi_Albert(const uint32_t finNumOfNodes, const uint32_t initNumOfNodes, const uint32_t numOfDegreesPerNode, const uint32_t seed);
-
-				uint32_t initNumOfNodes() const;
-				uint32_t numOfDegreesPerNode() const;
-				uint32_t seed() const;
-			};
+		struct GraphData
+		{
+			std::uint32_t *degrees;
+			std::int32_t *vertex_ids;
+			std::uint32_t *neighbour_offsets;
+			std::int32_t *neighbour_ids;
 		};
 
 		class Graph
@@ -183,9 +163,14 @@ namespace kspace
 			std::uint32_t *_adjlist;
 			std::uint32_t *_degrees;
 			std::uint32_t *_offsets;
+
+		protected:
+			GraphHeader readHeader(FileHandle &file);
+			GraphData readData(const FileHandle &file, const GraphHeader &hdr);
+
 		public:
 
-			Parameters::parameters_t *parameters;
+			Parameters *parameters;
 
 			Graph(const std::string fname, const MemoryLocation memloc);
 
