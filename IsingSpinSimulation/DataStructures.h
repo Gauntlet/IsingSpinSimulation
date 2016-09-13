@@ -25,7 +25,7 @@ static void HandleError( cudaError_t err, const char *file, int line )
 namespace kspace
 {
 
-	enum class MemoryLocation { host, device };
+	enum class MemoryLocation : std::uint32_t { host, device };
 
 	template<class elem_type> class Matrix
 	{

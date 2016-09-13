@@ -18,52 +18,55 @@
 	|	0		|	FILE ID					|		8		|	char		|	xKGRAPHx	|
 	|	8		|	Major Version			|		1		|	uint8_t		|	1			|
 	|	9		|	Minor Version			|		1		|	uint8_t		|	0			|
-	|	10		|	Data Offset				|		2		|	uint16_t	|	42			|
-	|	12		|	Data Size (B)			|		4		|	uint32_t	|	D=4(N+2M+Z)	|
-	|	16		|	Graph Type				|		2		|	uint16_t	|	G			|
-	|	18		|	Number of Nodes in Graph|		4		|	uint32_t	|	N			|
-	|	22		|	Number of Nodes in File	|		4		|	uint32_t	|	M			|
-	|	26		|	Number of Neighbours	|		4		|	uint32_t	|	Z			|
+	|	10		|	Parameter Offset		|		2		|	uint16_t	|	32			|
+	|	12		|	Data Offset				|		2		|	uint16_t	|	50			|
+	|	14		|	Data Size (B)			|		4		|	uint32_t	|	D=4(N+2M+Z)	|
+	|	18		|	Graph Type				|		2		|	uint16_t	|	G			|
+	|	20		|	Number of Nodes in Graph|		4		|	int32_t		|	N			|
+	|	24		|	Number of Nodes in File	|		4		|	int32_t		|	M			|
+	|	28		|	Number of Neighbours	|		4		|	uint32_t	|	Z			|
 	|---------------------------------------------------------------------------------------|
 	|				The rest of the header depends on the value of Graph Type				|
 	|---------------------------------------------------------------------------------------|
 	|										Rectangular Lattice								|
 	|---------------------------------------------------------------------------------------|
-	|	30		|	Width					|		4		|	uint32_t	|				|
-	|	34		|	Height					|		4		|	uint32_t	|				|
-	|	38		|	Padding					|		4		|	char[4]		|				|
+	|	32		|	Width					|		4		|	int32_t		|				|
+	|	36		|	Height					|		4		|	int32_t		|				|
+	|	40		|	Padding					|		10		|	char[10]	|				|
 	|---------------------------------------------------------------------------------------|
 	|										  Circular Lattice								|
 	|---------------------------------------------------------------------------------------|
-	|	30		|	Degree Per Nodes		|		4		|	uint32_t	|	0<=K<=N		|
-	|	34		|	Padding					|		8		|	char[8]		|				|
+	|	32		|	Degree Per Nodes		|		4		|	int32_t		|	0<=K<=N		|
+	|	36		|	Padding					|		14		|	char[14]	|				|
 	|---------------------------------------------------------------------------------------|
 	|											Erdos-Renyi									|
 	|---------------------------------------------------------------------------------------|
-	|	30		|	Seed					|		4		|	uint32_t	|				|
-	|	34		|	Wiring Probability		|		4		|	float		|	0<=p_w<=1	|
-	|	38		|	Padding					|		4		|	char[4]		|				|
+	|	32		|	Seed					|		4		|	uint32_t	|				|
+	|	36		|	Wiring Probability		|		4		|	float		|	0<=p_w<=1	|
+	|	40		|	Padding					|		10		|	char[10]	|				|
 	|---------------------------------------------------------------------------------------|
 	|										  Watts-Strogatz								|
 	|---------------------------------------------------------------------------------------|
-	|	30		|	Seed					|		4		|	uint32_t	|				|
-	|	34		|	Degree Per Nodes		|		4		|	uint32_t	|	0<=K<=N		|
-	|	38		|	Wiring Probability		|		4		|	float		|	0<=p_w<=1	|
+	|	32		|	Seed					|		4		|	uint32_t	|				|
+	|	36		|	Degree Per Nodes		|		4		|	int32_t		|	0<=K<=N		|
+	|	40		|	Wiring Probability		|		4		|	float		|	0<=p_w<=1	|
+	|	44		|	Padding					|		6		|	char[6]		|				|
 	|---------------------------------------------------------------------------------------|
 	|										  Barabasi-Albert								|
 	|---------------------------------------------------------------------------------------|
-	|	30		|	Seed					|		4		|	uint32_t	|				|
-	|	34		|	Initial Number of Nodes	|		4		|	uint32_t	|		M		|
-	|	38		|	Degree Per Nodes		|		4		|	uint32_t	|	0<=K<=M		|
+	|	32		|	Seed					|		4		|	uint32_t	|				|
+	|	36		|	Initial Number of Nodes	|		4		|	int32_t		|		M		|
+	|	40		|	Degree Per Nodes		|		4		|	int32_t		|	 0<=K<=M	|
+	|	44		|	Padding					|		6		|	char[6]		|				|
 	|---------------------------------------------------------------------------------------|
 	|---------------------------------------------------------------------------------------|
 	|---------------------------------------------------------------------------------------|
 	|	OFFSET	|		DATA FIELD			|	SIZE (B)	|	TYPE		|	VALUE		|
 	|---------------------------------------------------------------------------------------|
-	| 42		|	Degrees					|	   4N		|	uint32_t[N]	|	uint32_t	|
-	| 42+4N		|	Vertex IDs				|	   4M		|	int32_t[M]	|	int32_t		|
-	| 42+4(N+M) |	Neighbour Offsets		|	   4M		|	uint32_t[M]	|	uint32_t	|
-	| 42+4(N+2M)|	Neighbour IDs			|	   4Z		|	int32_t[Z]	|	int32_t		|
+	| 50		|	Degrees					|	   4N		|	uint32_t[N]	|	uint32_t	|
+	| 50+4N		|	Vertex IDs				|	   4M		|	int32_t[M]	|	int32_t		|
+	| 50+4(N+M) |	Neighbour Offsets		|	   4(M+1)	| uint32_t[M+1]	|	uint32_t	|
+	| 50+4(N+2M+1)|	Neighbour IDs			|	   4Z		|	int32_t[Z]	|	int32_t		|
 	|---------------------------------------------------------------------------------------|
 
 //////////////////////////////////////NOTES//////////////////////////////////////////
@@ -83,75 +86,112 @@ namespace kspace
 {
 	namespace Graph
 	{
-		enum Type : std::uint32_t
+
+		#define MAJOR_VERSION 1
+		#define MINOR_VERSION 0
+
+		enum GraphType : std::uint16_t
 		{
-			RECTANGULAR_LATTICE, CIRCULAR_LATTICE, ERDOS_RENYI, WATTS_STROGATZ, BARABASI_ALBERT
+			NONE, LINEAR_LATTICE, RECTANGULAR_LATTICE, CIRCULAR_LATTICE, ERDOS_RENYI, WATTS_STROGATZ, BARABASI_ALBERT
 		};
 
-		typedef std::string parameter_t;
-
-		class Parameters
+		namespace Parameters
 		{
-		public:
-			static class cast {
-			public:
-				typedef std::int32_t number_of_nodes_t, width_t, height_t, number_of_degrees_t, initial_number_of_nodes_t;
-				typedef float wiring_probability_t, rewiring_probability_t;
+			struct Rectangular_Lattice
+			{
+				std::int32_t number_of_nodes;
+				std::int32_t width;
+				std::int32_t height;
+
+				void operator()(const std::int32_t width, const std::int32_t height);
+				void clear() { (*this)(NULL, NULL); }
+
+				Rectangular_Lattice() { clear(); }
+				Rectangular_Lattice(const std::int32_t width, const std::int32_t height) { (*this)(width, height); }
 			};
 
-			enum class key { TYPE, NUMBER_OF_NODES, WIDTH, HEIGHT, NUMBER_OF_DEGREES, WIRING_PROBABILITY, REWIRING_PROBABILITY, INITIAL_NUMBER_OF_NODES };
+			struct Circular_Lattice
+			{
+				std::int32_t number_of_nodes;
+				std::int32_t number_of_degrees;
 
-			Parameters(const Type type, const std::int32_t number_of_nodes, const std::int32_t width, const std::int32_t height);
-			Parameters(const Type type, const std::int32_t number_of_nodes, const std::int32_t number_of_degrees);
-			Parameters(const Type type, const std::int32_t number_of_nodes, const float wiring_probability);
-			Parameters(const Type type, const std::int32_t number_of_nodes, const std::int32_t number_of_degrees, const float rewiring_probability);
-			Parameters(const Type type, const std::int32_t number_of_nodes, const std::int32_t initial_number_of_nodes, const std::int32_t number_of_degrees);
+				void operator()(const std::int32_t number_of_nodes, const std::int32_t number_of_degrees);
+				void clear() { (*this)(NULL, NULL); }
 
-			parameter_t operator()(const key parameter) const;
+				Circular_Lattice() { clear(); }
+				Circular_Lattice(const std::int32_t number_of_nodes, const std::int32_t number_of_degrees) { (*this)(number_of_nodes, number_of_degrees); }
+			};
 
-			void read(FileHandle &file);
-			void write(FileHandle &file);
-		private:
-			Type _type;
-			std::int32_t _numOfNodes;
-			std::map<key, std::string> _parameters;
-		} parameters;
+			struct Erdos_Renyi
+			{
+				std::int32_t number_of_nodes;
+				float wiring_probability;
+				std::uint32_t seed;
 
-		template <class T> T parameter_cast(const parameter_t &parameter_value)
-		{
-			std::stringstream ss;
-			ss << parameter_value;
+				void operator()(const std::int32_t number_of_nodes, const float wiring_probability, const uint32_t seed);
+				void clear() { (*this)(NULL, NULL, NULL); }
+				Erdos_Renyi() { clear(); }
+				Erdos_Renyi(const std::int32_t number_of_nodes, const float wiring_probability, const uint32_t seed) { (*this)(number_of_nodes, wiring_probability, seed); }
+			};
 
-			T value;
-			ss >> value;
+			struct Watts_Strogatz
+			{
+				std::int32_t number_of_nodes;
+				std::int32_t number_of_degrees;
+				float rewiring_probability;
+				std::uint32_t seed;
 
-			return value;
-		}
+				void operator()(const std::int32_t number_of_nodes, const std::int32_t number_of_degrees, const float rewiring_probability, const uint32_t seed);
+				void clear() { (*this)(NULL, NULL, NULL, NULL); }
+				
+				Watts_Strogatz() { clear(); }
+				Watts_Strogatz(const std::int32_t number_of_nodes, const std::int32_t number_of_degrees, const float rewiring_probability, const uint32_t seed) { (*this)(number_of_nodes, number_of_degrees, rewiring_probability, seed); }
+			};
 
-		template <class T> parameter_t parameter_cast(const T &parameter_value)
-		{
-			return std::to_string(parameter_value);
-		}
+			struct Barabasi_Albert
+			{
+				std::int32_t final_number_of_nodes;
+				std::int32_t initial_number_of_nodes;
+				std::int32_t number_of_degrees;
+				std::uint32_t seed;
 
-		struct GraphHeader
-		{
-			char file_type[8];
-			std::uint8_t version[2];
-			std::uint16_t data_offset;
-			std::uint32_t data_size;
-			std::uint16_t graph_type;
-			std::uint32_t num_of_nodes_in_graph;
-			std::uint32_t num_of_nodes_in_file;
-			std::uint32_t num_of_neighbours;
-			Parameters parameters;
-		};
+				void operator()(const std::int32_t init_number_of_nodes, const std::int32_t final_number_of_nodes, const std::int32_t number_of_degrees, const uint32_t seed);
+				void clear() { (*this)(NULL, NULL, NULL, NULL); }
+				
+				Barabasi_Albert() { clear(); }
+				Barabasi_Albert(const std::int32_t init_number_of_nodes, const std::int32_t final_number_of_nodes, const std::int32_t number_of_degrees, const uint32_t seed) { (*this)(init_number_of_nodes, final_number_of_nodes, number_of_degrees, seed); }
+			};
 
-		struct GraphData
-		{
-			std::uint32_t *degrees;
-			std::int32_t *vertex_ids;
-			std::uint32_t *neighbour_offsets;
-			std::int32_t *neighbour_ids;
+			class Graph_Parameters
+			{
+			private:
+
+			public:
+				GraphType type;
+				Rectangular_Lattice rectangular_lattice;
+				Circular_Lattice circular_lattice;
+				Erdos_Renyi erdos_renyi;
+				Watts_Strogatz watts_strogatz;
+				Barabasi_Albert barabasi_albert;
+
+				Graph_Parameters()								{ clear(); type = NONE; }
+				Graph_Parameters(const std::string filename);
+				Graph_Parameters(const Rectangular_Lattice& rl)	{ clear(); rectangular_lattice = rl; };
+				Graph_Parameters(const Circular_Lattice& cl)	{ clear(); circular_lattice = cl; }
+				Graph_Parameters(const Erdos_Renyi& er)			{ clear(); erdos_renyi = er; }
+				Graph_Parameters(const Watts_Strogatz& ws)		{ clear(); watts_strogatz = ws; }
+				Graph_Parameters(const Barabasi_Albert& ba)		{ clear(); barabasi_albert = ba; }
+
+				void clear()
+				{
+					type = NONE;
+					rectangular_lattice.clear();
+					circular_lattice.clear();
+					erdos_renyi.clear();
+					watts_strogatz.clear();
+					barabasi_albert.clear();
+				}
+			};
 		};
 
 		class Graph
@@ -159,22 +199,17 @@ namespace kspace
 		private:
 			MemoryLocation *_memLoc;
 
+			std::int32_t *_number_of_nodes;
+
 			std::uint8_t *_adjmat;
-			std::uint32_t *_adjlist;
-			std::uint32_t *_degrees;
+			std::int32_t *_adjlist;
+			std::int32_t *_degrees;
 			std::uint32_t *_offsets;
-
-		protected:
-			GraphHeader readHeader(FileHandle &file);
-			GraphData readData(const FileHandle &file, const GraphHeader &hdr);
-
 		public:
-
-			Parameters *parameters;
-
 			Graph(const std::string fname, const MemoryLocation memloc);
+			~Graph();
 
-			uint32_t numOfNodes() const;
+			uint32_t number_of_nodes() const;
 			uint32_t degree(const uint32_t v) const;
 
 			bool is_connected(const uint32_t v, const uint32_t w) const;
