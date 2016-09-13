@@ -35,6 +35,8 @@
     <ClInclude Include="File_IO.h" />
     <ClInclude Include="Graph.h" />
     <ClInclude Include="IsingSpin.cuh" />
+    <ClInclude Include="Ising_Spin_Model.h" />
+    <ClInclude Include="Physical_Model.h" />
     <ClInclude Include="Quench.h" />
   </ItemGroup>
   <ItemGroup>

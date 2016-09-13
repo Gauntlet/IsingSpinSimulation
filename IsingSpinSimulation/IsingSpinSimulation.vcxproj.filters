@@ -16,6 +16,9 @@
     <Filter Include="Headers\File_IO">
       <UniqueIdentifier>{7fd9a565-5beb-48f3-bbb3-9ae19e0b3098}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Headers\Physical_Model">
+      <UniqueIdentifier>{74255d48-6d22-4b55-8599-b13ca412dfe7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Analysers.cuh">
@@ -35,6 +38,12 @@
     </ClInclude>
     <ClInclude Include="File_IO.h">
       <Filter>Headers\File_IO</Filter>
+    </ClInclude>
+    <ClInclude Include="Physical_Model.h">
+      <Filter>Headers\Physical_Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Ising_Spin_Model.h">
+      <Filter>Headers\Physical_Model</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

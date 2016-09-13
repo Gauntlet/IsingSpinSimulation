@@ -3,10 +3,10 @@
 using namespace kspace;
 
 template <class elem_type>
-MatrixShared::initialize( const uint32_t numofcols, const uint32_t numofrows )
+void kspace::MatrixShared<elem_type>::initialise(const uint32_t number_of_rows, const uint32_t number_of_columns)
 {
-	host = new Matrix( numofcols, numofrows, MemoryLocation::host );
-	intermediary = new Matrix( numofcols, numofrows, MemoryLocation::device );
+	host = new Matrix(number_of_rows, number_of_columns, MemoryLocation::host);
+	intermediary = new Matrix(number_of_rows, number_of_columns, MemoryLocation::device);
 	HANDLE_ERROR( cudaMalloc((void**)&device, sizeof(Matrix)) );
 	HANDLE_ERROR( cudaMemcpy(device, intermediary, sizeof(Matrix), cudaMemcpyHostToDevice) );
 	
@@ -19,19 +19,19 @@ MatrixShared::initialize( const uint32_t numofcols, const uint32_t numofrows )
 }
 
 template <class elem_type>
-MatrixShared::MatrixShared( const uint32_t N )
+MatrixShared<elem_type>::MatrixShared( const uint32_t N )
 {
 	initialize( N, N );
 }
 
 template <class elem_type>
-MatrixShared::MatrixShared( const uint32_t numofcols, const uint32_t numofrows )
+MatrixShared<elem_type>::MatrixShared(const uint32_t number_of_rows, const uint32_t number_of_columns)
 {
-	initialize( numofcols, numofrows );
+	initialize( number_of_columns, number_of_rows );
 }
 
 template <class elem_type>
-MatrixShared::~MatrixShared()
+MatrixShared<elem_type>::~MatrixShared()
 {
 	HANDLE_ERROR( cudaFree(device) );
 	delete[] intermediary;
@@ -39,13 +39,13 @@ MatrixShared::~MatrixShared()
 }
 
 template <class elem_type>
-void MatrixShared::host2device()
+void MatrixShared<elem_type>::host2device()
 {
 	HANDLE_ERROR( cudaMalloc(intermediary->_data, host->_data, sizeof(elem_type) * host->length(), cudaMemcpyHostToDevice) );
 }
 
 template <class elem_type>
-void MatrixShared::device2host()
+void MatrixShared<elem_type>::device2host()
 {
 	HANDLE_ERROR( cudaMalloc(host->_data, intermediary->_data, sizeof(elem_type) * host->length(), cudaMemcpyDeviceToHost) );
 }

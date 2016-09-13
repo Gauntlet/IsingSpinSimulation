@@ -62,13 +62,13 @@ JaggedList<elem_type>::~JaggedList()
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER MemoryLocation JaggedList<elem_type>::memory_location() const
+MemoryLocation JaggedList<elem_type>::memory_location() const
 {
 	return *_memloc;
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER elem_type JaggedList<elem_type>::get( const uint32_t row, const uint32_t col ) const
+elem_type JaggedList<elem_type>::get( const uint32_t row, const uint32_t col ) const
 {
 	if (row < 0 || row >= numOfRows() || col <= 0 || col >= numOfCols())
 	{
@@ -79,7 +79,7 @@ CUDA_CALLABLE_MEMBER elem_type JaggedList<elem_type>::get( const uint32_t row, c
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER void JaggedList<elem_type>::set( const uint32_t row, const uint32_t col, const elem_type val)
+void JaggedList<elem_type>::set( const uint32_t row, const uint32_t col, const elem_type val)
 {
 	if (row < 0 || row >= numOfRows() || col <= 0 || col >= numOfCols())
 	{
@@ -90,19 +90,19 @@ CUDA_CALLABLE_MEMBER void JaggedList<elem_type>::set( const uint32_t row, const 
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER uint32_t JaggedList<elem_type>::length() const
+uint32_t JaggedList<elem_type>::length() const
 {
 	return *_length;
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER uint32_t JaggedList<elem_type>::size() const
+uint32_t JaggedList<elem_type>::size() const
 {
 	return _offsets[ length() ];
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER uint32_t JaggedList<elem_type>::length( const uint32_t row ) const
+uint32_t JaggedList<elem_type>::length( const uint32_t row ) const
 {
 	if (row < 0 || row >= numOfRows())
 	{
@@ -113,7 +113,7 @@ CUDA_CALLABLE_MEMBER uint32_t JaggedList<elem_type>::length( const uint32_t row 
 }
 
 template <class elem_type>
-CUDA_CALLABLE_MEMBER uint32_t JaggedList<elem_type>::offset( const uint32_t row ) const
+uint32_t JaggedList<elem_type>::offset( const uint32_t row ) const
 {
 	if (row < 0 || row >= numOfRows())
 	{
