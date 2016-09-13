@@ -2,6 +2,17 @@
 
 using namespace kspace::Graph;
 
+GraphShared::GraphShared(GraphShared& other)
+{
+	(*this).intermediary = other.intermediary;
+	(*this).host = other.host;
+	(*this).device = other.device;
+
+	other.intermediary = nullptr;
+	other.host = nullptr;
+	other.device = nullptr;
+}
+
 GraphShared::GraphShared(const std::string filename)
 {
 	host = new Graph(filename, MemoryLocation::host);
@@ -13,9 +24,31 @@ GraphShared::GraphShared(const std::string filename)
 
 GraphShared::~GraphShared()
 {
-	cudaFree(device);
-	delete intermediary;
-	delete host;
+	if (nullptr != device)
+	{
+		cudaFree(device);
+	}
+
+	if (nullptr != intermediary)
+	{
+		delete intermediary;
+	}
+
+	if (nullptr != host)
+	{
+		delete host;
+	}
+}
+
+GraphShared& GraphShared::operator=(GraphShared&& rhs)
+{
+	(*this).intermediary = rhs.intermediary;
+	(*this).host = rhs.host;
+	(*this).device = rhs.device;
+
+	rhs.intermediary = nullptr;
+	rhs.host = nullptr;
+	rhs.device = nullptr;
 }
 
 void GraphShared::host2device()

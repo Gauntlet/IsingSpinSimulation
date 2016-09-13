@@ -221,6 +221,7 @@ namespace kspace
 
 		class GraphShared
 		{
+			friend class GraphShared;
 		private:
 			Graph *intermediary;
 
@@ -228,8 +229,17 @@ namespace kspace
 			Graph *host;
 			Graph *device;
 
+			
 			GraphShared(const std::string filename);
 			~GraphShared();
+
+			//Remove the default copy constructors
+			GraphShared(const FileHandle&) = delete;
+			GraphShared& operator=(const GraphShared&) = delete;
+
+			//Define move constructors
+			GraphShared(GraphShared& other);
+			GraphShared& operator=(GraphShared&& rhs);
 
 			void host2device();
 			void device2host();
