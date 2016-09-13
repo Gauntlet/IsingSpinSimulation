@@ -196,8 +196,9 @@ namespace kspace
 
 		class Graph
 		{
+			friend class GraphShared;
 		private:
-			MemoryLocation *_memLoc;
+			MemoryLocation _memLoc;
 
 			std::int32_t *_number_of_nodes;
 
@@ -209,11 +210,11 @@ namespace kspace
 			Graph(const std::string fname, const MemoryLocation memloc);
 			~Graph();
 
-			uint32_t number_of_nodes() const;
-			uint32_t degree(const uint32_t v) const;
+			int32_t number_of_nodes() const;
+			int32_t degree(const uint32_t v) const;
 
 			bool is_connected(const uint32_t v, const uint32_t w) const;
-			uint32_t neighbour(const uint32_t v, const uint32_t kth_neighbour) const;
+			int32_t neighbour(const uint32_t v, const uint32_t kth_neighbour) const;
 
 			MemoryLocation memory_location() const;
 		};
@@ -222,11 +223,12 @@ namespace kspace
 		{
 		private:
 			Graph *intermediary;
+
 		public:
 			Graph *host;
 			Graph *device;
 
-			GraphShared(const std::string fname);
+			GraphShared(const std::string filename);
 			~GraphShared();
 
 			void host2device();

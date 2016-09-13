@@ -78,8 +78,6 @@ Data readData(const FileHandle &file, const uint16_t data_offset, const uint32_t
 		throw std::runtime_error("fseek to beginning of graph data failed: " + std::to_string(seeksuccess));
 	}
 	
-	
-
 	return data;
 }
 
@@ -110,10 +108,10 @@ Graph::Graph::Graph(const std::string fname, const MemoryLocation memloc)
 
 			Data data = readData(file, data_offset, data_size, (GraphType) graphtype, number_of_nodes_in_graph, number_of_nodes_in_file, number_of_neighbours);
 
+			_memLoc = memloc;
 			//Once data is loaded into host memory it either kept in host memory or transfered to device memory.
 			if (MemoryLocation::host == memloc)
 			{
-				_memLoc = new MemoryLocation(MemoryLocation::host);
 				_number_of_nodes = data.num_of_nodes;				
 				_adjmat = data.adjmat;
 				_adjlist = data.adjlist;
@@ -122,15 +120,12 @@ Graph::Graph::Graph(const std::string fname, const MemoryLocation memloc)
 			}
 			else if (MemoryLocation::device == memloc)
 			{
-			
-				cudaMalloc((void**)&_memLoc, sizeof(kspace::MemoryLocation));
 				cudaMalloc((void**)&_number_of_nodes, sizeof(std::int32_t));
 				cudaMalloc((void**)&_adjmat, sizeof(std::uint8_t)*number_of_nodes_in_graph*number_of_nodes_in_graph);
 				cudaMalloc((void**)&_adjlist, sizeof(std::int32_t)*data.offsets[number_of_nodes_in_graph + 1]);
 				cudaMalloc((void**)&_degrees, sizeof(std::int32_t)*number_of_nodes_in_graph);
 				cudaMalloc((void**)&_offsets, sizeof(std::uint32_t)*(number_of_nodes_in_graph + 1));
 
-				cudaMemcpy(_memLoc, &memloc, sizeof(kspace::MemoryLocation), cudaMemcpyHostToDevice);
 				cudaMemcpy(_number_of_nodes, data.num_of_nodes, sizeof(std::int32_t), cudaMemcpyHostToDevice);
 				cudaMemcpy(_adjmat, data.adjmat, sizeof(std::uint8_t)*number_of_nodes_in_graph*number_of_nodes_in_graph, cudaMemcpyHostToDevice);
 				cudaMemcpy(_adjlist, data.adjlist, sizeof(std::int32_t)*data.offsets[number_of_nodes_in_graph + 1], cudaMemcpyHostToDevice);
@@ -152,5 +147,24 @@ Graph::Graph::Graph(const std::string fname, const MemoryLocation memloc)
 	else
 	{
 		throw std::runtime_error("Incorrect File Format: File is not a .kgraph");
+	}
+}
+
+Graph::Graph::~Graph()
+{
+	if (MemoryLocation::host == memory_location())
+	{
+		delete _number_of_nodes;
+		delete[] _adjmat;
+		delete[] _adjlist;
+		delete[] _degrees;
+		delete[] _offsets;
+	}
+	else if (MemoryLocation::device == memory_location())
+	{
+		cudaFree(_adjmat);
+		cudaFree(_adjlist);
+		cudaFree(_degrees);
+		cudaFree(_offsets);
 	}
 }

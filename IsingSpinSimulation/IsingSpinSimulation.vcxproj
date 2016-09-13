@@ -21,6 +21,7 @@
   <ItemGroup>
     <CudaCompile Include="Analysers.cu" />
     <CudaCompile Include="Graph.cu" />
+    <CudaCompile Include="GraphShared.cu" />
     <CudaCompile Include="IsingSpin.cu" />
     <CudaCompile Include="JaggedList.cu" />
     <CudaCompile Include="JaggedListShared.cu" />

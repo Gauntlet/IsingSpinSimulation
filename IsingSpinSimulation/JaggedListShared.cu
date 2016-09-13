@@ -3,7 +3,7 @@
 using namespace kspace;
 
 template <class elem_type> 
-JaggedListShared::JaggedListShared( const uint32_t N, const uint32_t* lengths )
+JaggedListShared<elem_type>::JaggedListShared( const uint32_t N, const uint32_t* lengths )
 {
 	host = new JaggedList( N, lengths, MemoryLocation::host );
 	intermediary = new JaggetList( N, lengths, MemoryLocation::device );
@@ -26,13 +26,13 @@ JaggedListShared::JaggedListShared()
 }
 
 template <class elem_type>
-void JaggedListShared::host2device()
+void kspace::JaggedListShared<elem_type>::host2device()
 {
 	HANDLE_ERROR( cudaMemcpy(intermediary->_data, host->_data, sizeof(elem_type)*host->size(), cudaMemcpyHostToDevice) );
 }
 
 template <class elem_type>
-void JaggedListShared::device2host()
+void JaggedListShared<elem_type>::device2host()
 {
 	HANDLE_ERROR( cudaMemcpy(host->_data, intermediary->_data, sizeof(elem_type)*host->size(), cudaMemcpyDeviceToHost) );
 }

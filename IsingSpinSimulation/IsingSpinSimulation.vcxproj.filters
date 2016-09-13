@@ -60,6 +60,9 @@
     <CudaCompile Include="Graph.cu">
       <Filter>Headers\Data_Structures\Graph</Filter>
     </CudaCompile>
+    <CudaCompile Include="GraphShared.cu">
+      <Filter>Headers\Data_Structures\Graph</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Quench.cpp">

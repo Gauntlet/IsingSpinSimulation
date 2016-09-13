@@ -75,6 +75,8 @@ namespace kspace
 
 	template <class elem_type> class JaggedList
 	{
+		friend class JaggedListShared < elem_type > ;
+
 		private:
 		MemoryLocation *_memloc;
 		elem_type* _data;
@@ -100,15 +102,12 @@ namespace kspace
 
 	template <class elem_type> class JaggedListShared
 	{
-		template <class elem_type2>
-		friend class JaggedList;
-
 		private:
-		JaggedList *intermediary;
+		JaggedList<elem_type> *intermediary;
 
 		public:
-		JaggedList *host;
-		JaggedList *device;
+		JaggedList<elem_type> *host;
+		JaggedList<elem_type> *device;
 
 		JaggedListShared( const uint32_t N, const uint32_t* lengths );
 		~JaggedListShared();
