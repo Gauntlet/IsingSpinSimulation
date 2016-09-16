@@ -21,15 +21,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Analysers.cuh">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="IsingSpin.cuh">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="Quench.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="Graph.h">
       <Filter>Headers\Data_Structures\Graph</Filter>
     </ClInclude>
@@ -47,9 +38,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="IsingSpin.cu">
-      <Filter>Headers</Filter>
-    </CudaCompile>
     <CudaCompile Include="Source.cu" />
     <CudaCompile Include="JaggedList.cu">
       <Filter>Headers\Data_Structures\Array_Structures</Filter>
@@ -72,11 +60,11 @@
     <CudaCompile Include="GraphShared.cu">
       <Filter>Headers\Data_Structures\Graph</Filter>
     </CudaCompile>
+    <CudaCompile Include="Ising_Spin_Model.cu">
+      <Filter>Headers\Physical_Model</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Quench.cpp">
-      <Filter>Headers</Filter>
-    </ClCompile>
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="Graph_Parameters.cpp">
       <Filter>Headers\Data_Structures\Graph</Filter>
