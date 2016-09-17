@@ -22,7 +22,9 @@
     <CudaCompile Include="Analysers.cu" />
     <CudaCompile Include="Graph.cu" />
     <CudaCompile Include="GraphShared.cu" />
-    <CudaCompile Include="Ising_Spin_Model.cu" />
+    <CudaCompile Include="IsingSpinModel.cu" />
+    <CudaCompile Include="IsingSpinModelBase.cu" />
+    <CudaCompile Include="IsingSpinModel_MetropolisHastings.cu" />
     <CudaCompile Include="JaggedList.cu" />
     <CudaCompile Include="JaggedListShared.cu" />
     <CudaCompile Include="Matrix.cu" />

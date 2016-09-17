@@ -12,7 +12,7 @@
 	#define CUDA_CALLABLE_MEMBER
 #endif 
 
-static void HandleError( cudaError_t err, const char *file, int line )
+static void HandleError( cudaError_t err, const char* file, int line )
 {
 	if ( err != cudaSuccess ) {
 		printf( "%s in %s at line %d\n", cudaGetErrorString( err ), file, line );
@@ -32,24 +32,26 @@ namespace kspace
 		friend class MatrixShared < elem_type > ;
 
 	private:
-		const MemoryLocation *_memloc;
+		const MemoryLocation _memloc;
 		elem_type* _data;
 		uint32_t* _length;
 
 		uint32_t* _number_of_columns;
 		uint32_t* _number_of_rows;
 
-		void initialise(const uint32_t num_of_rows, const uint32_t num_of_columns, const MemoryLocation memloc);
+		void initialise(const uint32_t number_of_columns, const uint32_t number_of_rows, const MemoryLocation memloc);
 
 	public:
 		Matrix( const uint32_t N, const MemoryLocation memloc );
-		Matrix(const uint32_t num_of_rows, const uint32_t num_of_columns, const MemoryLocation memloc);
+		Matrix(const uint32_t number_of_columns, const uint32_t number_of_rows, const MemoryLocation memloc);
 
 		~Matrix();
 
 		CUDA_CALLABLE_MEMBER MemoryLocation memory_location() const;
-		CUDA_CALLABLE_MEMBER elem_type get( const uint32_t row, const uint32_t column ) const;
-		CUDA_CALLABLE_MEMBER void set( const uint32_t row, const uint32_t column, const elem_type value );
+		CUDA_CALLABLE_MEMBER elem_type* raw_data();
+		CUDA_CALLABLE_MEMBER elem_type* raw_data(const std::uint32_t column);
+		CUDA_CALLABLE_MEMBER elem_type get( const uint32_t column, const uint32_t row ) const;
+		CUDA_CALLABLE_MEMBER void set( const uint32_t column, const uint32_t row , const elem_type value );
 
 		CUDA_CALLABLE_MEMBER uint32_t length() const;
 		CUDA_CALLABLE_MEMBER uint32_t number_of_columns() const;
@@ -59,14 +61,14 @@ namespace kspace
 	template <class elem_type> class MatrixShared
 	{
 	private:
-		Matrix<elem_type> *intermediary;
-		void initialise(const uint32_t num_of_rows, const uint32_t num_of_columns);
+		Matrix<elem_type>* intermediary;
+		void initialise(const uint32_t number_of_columns, const uint32_t number_of_rows);
 	public:
-		Matrix<elem_type> *host;
-		Matrix<elem_type> *device;
+		Matrix<elem_type>* host;
+		Matrix<elem_type>* device;
 
 		MatrixShared( const uint32_t N );
-		MatrixShared(const uint32_t num_of_rows, const uint32_t num_of_columns);
+		MatrixShared(const uint32_t number_of_columns, const uint32_t number_of_rows);
 		~MatrixShared();
 
 		void host2device();
@@ -78,8 +80,9 @@ namespace kspace
 		friend class JaggedListShared < elem_type > ;
 
 		private:
-		MemoryLocation *_memloc;
+		MemoryLocation _memloc;
 		elem_type* _data;
+		uint32_t* _size;
 		uint32_t* _length;
 
 		uint32_t* _lengths;
@@ -91,8 +94,11 @@ namespace kspace
 		~JaggedList();
 
 		CUDA_CALLABLE_MEMBER MemoryLocation memory_location() const;
-		CUDA_CALLABLE_MEMBER elem_type get( const uint32_t row, const uint32_t column ) const;
-		CUDA_CALLABLE_MEMBER void set( const uint32_t row, const uint32_t column, const elem_type val );
+		CUDA_CALLABLE_MEMBER elem_type* raw_data();
+		CUDA_CALLABLE_MEMBER uint32_t* raw_degrees();
+		CUDA_CALLABLE_MEMBER uint32_t* raw_offsets();
+		CUDA_CALLABLE_MEMBER elem_type get( const uint32_t column, const uint32_t row ) const;
+		CUDA_CALLABLE_MEMBER void set( const uint32_t column, const uint32_t row , const elem_type val );
 
 		CUDA_CALLABLE_MEMBER uint32_t length() const;
 		CUDA_CALLABLE_MEMBER uint32_t size() const;
@@ -103,11 +109,11 @@ namespace kspace
 	template <class elem_type> class JaggedListShared
 	{
 		private:
-		JaggedList<elem_type> *intermediary;
+		JaggedList<elem_type>* intermediary;
 
 		public:
-		JaggedList<elem_type> *host;
-		JaggedList<elem_type> *device;
+		JaggedList<elem_type>* host;
+		JaggedList<elem_type>* device;
 
 		JaggedListShared( const uint32_t N, const uint32_t* lengths );
 		~JaggedListShared();

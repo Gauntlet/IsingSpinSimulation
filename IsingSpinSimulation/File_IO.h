@@ -15,12 +15,12 @@ namespace kspace
 	class FileHandle
 	{
 	private:
-		FILE *file;
+		FILE* file;
 	public:
-		explicit FileHandle(std::string fname, char *Mode)
+		explicit FileHandle( std::string fname, char* Mode )
 		{
-			file = fopen(fname.c_str(), Mode);
-			if (!file)
+			file = fopen( fname.c_str(), Mode );
+			if ( !file )
 			{
 				throw "File failed to open";
 			}
@@ -28,9 +28,9 @@ namespace kspace
 
 		~FileHandle()
 		{
-			if (file)
+			if ( file )
 			{
-				fclose(file);
+				fclose( file );
 			}
 		}
 
@@ -40,17 +40,17 @@ namespace kspace
 		}
 
 		//Remove the default copy constructors
-		FileHandle(const FileHandle&) = delete;
-		FileHandle& operator=(const FileHandle&) = delete;
+		FileHandle( const FileHandle& ) = delete;
+		FileHandle& operator=( const FileHandle& ) = delete;
 
 		//Define move constructors for the file pointer.
-		FileHandle(FileHandle&& that)
+		FileHandle( FileHandle&& that )
 		{
 			file = that.file;
 			that.file = 0;
 		}
 
-		FileHandle& operator=(FileHandle&& that)
+		FileHandle& operator=( FileHandle&& that )
 		{
 			file = that.file;
 			that.file = 0;

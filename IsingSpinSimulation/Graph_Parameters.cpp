@@ -33,16 +33,16 @@ uint32_t Rectangular_Lattice::height() const
 ///////////////////////////////////////////////////////
 /////////////////Circular Lattice\\\\\\\\\\\\\\\\\\\\\\
 
-Circular_Lattice::Circular_Lattice(const uint32_t numOfNodes, const uint32_t numOfDegreesPerNode) : parameters_t(Type::Circular_Lattice, numOfNodes)
+Circular_Lattice::Circular_Lattice( const uint32_t numOfNodes, const uint32_t numOfDegreesPerNode ) : parameters_t( Type::Circular_Lattice, numOfNodes )
 {
-	if (numOfDegreesPerNode >= numOfNodes)
+	if ( numOfDegreesPerNode >= numOfNodes )
 	{
-		throw std::invalid_argument("number of degrees per node is greater than the number of nodes");
+		throw std::invalid_argument( "number of degrees per node is greater than the number of nodes" );
 	}
 
-	if (numOfDegreesPerNode % 2 != 0)
+	if ( numOfDegreesPerNode % 2 != 0 )
 	{
-		throw std::invalid_argument("number of degrees per node is not an even integer");
+		throw std::invalid_argument( "number of degrees per node is not an even integer" );
 	}
 
 	_numOfDegreesPerNode = numOfDegreesPerNode;
@@ -71,16 +71,16 @@ uint32_t Erdos_Renyi::seed() const
 ///////////////////////////////////////////////////////
 //////////////////Watts Strogatz\\\\\\\\\\\\\\\\\\\\\\\
 
-Watts_Strogatz::Watts_Strogatz(const uint32_t numOfNodes, const uint32_t numOfDegreesPerNode, const double rewiringProbability, const uint32_t seed) : parameters_t(Type::Watts_Strogatz, numOfNodes)
+Watts_Strogatz::Watts_Strogatz( const uint32_t numOfNodes, const uint32_t numOfDegreesPerNode, const double rewiringProbability, const uint32_t seed ) : parameters_t( Type::Watts_Strogatz, numOfNodes )
 {
-	if (numOfDegreesPerNode >= numOfNodes)
+	if ( numOfDegreesPerNode >= numOfNodes )
 	{
-		throw std::invalid_argument("number of degrees per node is greater than the number of nodes");
+		throw std::invalid_argument( "number of degrees per node is greater than the number of nodes" );
 	}
 
-	if (numOfDegreesPerNode % 2 != 0)
+	if ( numOfDegreesPerNode % 2 != 0 )
 	{
-		throw std::invalid_argument("number of degrees per node is not an even integer");
+		throw std::invalid_argument( "number of degrees per node is not an even integer" );
 	}
 
 	_numOfDegreesPerNode = numOfDegreesPerNode;
@@ -107,16 +107,16 @@ uint32_t Watts_Strogatz::seed() const
 ///////////////////////////////////////////////////////
 /////////////////Barabasi Albert\\\\\\\\\\\\\\\\\\\\\\\
 
-Barabasi_Albert::Barabasi_Albert(const uint32_t finNumOfNodes, const uint32_t initNumOfNodes, const uint32_t numOfDegreesPerNode, const uint32_t seed) : parameters_t(Type::Barabasi_Albert, finNumOfNodes)
+Barabasi_Albert::Barabasi_Albert( const uint32_t finNumOfNodes, const uint32_t initNumOfNodes, const uint32_t numOfDegreesPerNode, const uint32_t seed ) : parameters_t( Type::Barabasi_Albert, finNumOfNodes )
 {
-	if (finNumOfNodes < initNumOfNodes)
+	if ( finNumOfNodes < initNumOfNodes )
 	{
-		throw std::invalid_argument("the final number of nodes is less than initial number of nodes");
+		throw std::invalid_argument( "the final number of nodes is less than initial number of nodes" );
 	}
 
-	if (numOfDegreesPerNode > initNumOfNodes)
+	if ( numOfDegreesPerNode > initNumOfNodes )
 	{
-		throw std::invalid_argument("the number of degrees per node is greater than the initial number of nodes");
+		throw std::invalid_argument( "the number of degrees per node is greater than the initial number of nodes" );
 	}
 
 	_initNumOfNodes = initNumOfNodes;

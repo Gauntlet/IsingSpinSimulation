@@ -51,17 +51,23 @@
     <CudaCompile Include="MatrixShared.cu">
       <Filter>Headers\Data_Structures\Array_Structures</Filter>
     </CudaCompile>
-    <CudaCompile Include="Analysers.cu">
-      <Filter>Headers\Data_Structures\Array_Structures</Filter>
-    </CudaCompile>
     <CudaCompile Include="Graph.cu">
       <Filter>Headers\Data_Structures\Graph</Filter>
     </CudaCompile>
     <CudaCompile Include="GraphShared.cu">
       <Filter>Headers\Data_Structures\Graph</Filter>
     </CudaCompile>
-    <CudaCompile Include="Ising_Spin_Model.cu">
+    <CudaCompile Include="IsingSpinModelBase.cu">
       <Filter>Headers\Physical_Model</Filter>
+    </CudaCompile>
+    <CudaCompile Include="IsingSpinModel.cu">
+      <Filter>Headers\Physical_Model</Filter>
+    </CudaCompile>
+    <CudaCompile Include="IsingSpinModel_MetropolisHastings.cu">
+      <Filter>Headers\Physical_Model</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Analysers.cu">
+      <Filter>Headers</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
