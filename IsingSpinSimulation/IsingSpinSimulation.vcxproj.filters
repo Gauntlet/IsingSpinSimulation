@@ -60,14 +60,17 @@
     <CudaCompile Include="IsingSpinModelBase.cu">
       <Filter>Headers\Physical_Model</Filter>
     </CudaCompile>
-    <CudaCompile Include="IsingSpinModel.cu">
-      <Filter>Headers\Physical_Model</Filter>
-    </CudaCompile>
     <CudaCompile Include="IsingSpinModel_MetropolisHastings.cu">
       <Filter>Headers\Physical_Model</Filter>
     </CudaCompile>
     <CudaCompile Include="Analysers.cu">
       <Filter>Headers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="IsingSpinModelSave.cu">
+      <Filter>Headers\Physical_Model</Filter>
+    </CudaCompile>
+    <CudaCompile Include="IsingSpinModel_parallel.cu">
+      <Filter>Headers\Physical_Model</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
@@ -77,6 +80,9 @@
     </ClCompile>
     <ClCompile Include="Parameters.cpp">
       <Filter>Headers\Data_Structures\Graph</Filter>
+    </ClCompile>
+    <ClCompile Include="Compression.cpp">
+      <Filter>Headers\File_IO</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
