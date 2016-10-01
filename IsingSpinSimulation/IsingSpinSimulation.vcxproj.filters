@@ -36,6 +36,21 @@
     <ClInclude Include="Ising_Spin_Model.h">
       <Filter>Headers\Physical_Model</Filter>
     </ClInclude>
+    <ClInclude Include="Parameters.h">
+      <Filter>Headers\Data_Structures\Graph</Filter>
+    </ClInclude>
+    <ClInclude Include="KDetails.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Graph_File_Header.h">
+      <Filter>Headers\Data_Structures\Graph</Filter>
+    </ClInclude>
+    <ClInclude Include="Compression.h">
+      <Filter>Headers\File_IO</Filter>
+    </ClInclude>
+    <ClInclude Include="ArrayHandle.h">
+      <Filter>Headers\Data_Structures\Array_Structures</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Source.cu" />
@@ -75,14 +90,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
-    <ClCompile Include="Graph_Parameters.cpp">
-      <Filter>Headers\Data_Structures\Graph</Filter>
-    </ClCompile>
     <ClCompile Include="Parameters.cpp">
       <Filter>Headers\Data_Structures\Graph</Filter>
     </ClCompile>
     <ClCompile Include="Compression.cpp">
       <Filter>Headers\File_IO</Filter>
+    </ClCompile>
+    <ClCompile Include="Graph_File_Header.cpp">
+      <Filter>Headers\Data_Structures\Graph</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

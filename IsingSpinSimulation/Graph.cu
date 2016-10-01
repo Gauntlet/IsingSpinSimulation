@@ -3,75 +3,49 @@
 #include "File_IO.h"
 #include <map>
 #include <memory>
+#include "Graph_File_Header.h"
 
-using namespace kspace;
+using namespace kspace::GRAPH;
+using namespace kspace::FILEIO;
 
 
-struct Data {
-	std::int32_t* num_of_nodes;
-	std::uint8_t* adjmat;
-	std::int32_t* adjlist;
-	std::int32_t* degrees;
-	std::uint32_t* offsets;
-};
 
-Data readData( const FileHandle &file, const uint16_t data_offset, const uint32_t data_size, const Graph::GraphType graphtype, const uint32_t number_of_nodes_in_graph, const uint32_t number_of_nodes_in_file, const uint32_t number_of_neighbours )
+Graph::Data Graph::readData( const FILEIO::FileHandle &file)
 {
 	Data data = { nullptr, nullptr, nullptr, nullptr, nullptr };
+
+	
+	uint16_t data_offset(0);
+	int seeksuccess = fseek( file(), Header::OFFSET_DATA, SEEK_SET );
+	if ( !seeksuccess )
+	{
+		
+		fread( &data_offset, Header::field_size.OFFSET_DATA, 1, file() );
+	}
+	else
+	{
+		throw std::runtime_error( "fseek to data offset failed: " + std::to_string( seeksuccess ) );
+	}
+
+	uint32_t size_data_compressed(0), size_data_bitpacked(0), size_data_uncompressed(0);
+	int seeksuccess = fseek( file(), Header::SIZE_D_UNCOMPRESSED, SEEK_SET );
+	if ( !seeksuccess )
+	{
+		uint16_t data_offset;
+		fread( &size_data_uncompressed, Header::field_size.SIZE_D_UNCOMPRESSED, 1, file() );
+		fread( &size_data_bitpacked, Header::field_size.SIZE_D_BITPACKED, 1, file() );
+		fread( &size_data_compressed, Header::field_size.SIZE_D_COMPRESSED, 1, file() );
+	}
+	else
+	{
+		throw std::runtime_error( "fseek to data size details failed: " + std::to_string( seeksuccess ) );
+	}
 
 	int seeksuccess = fseek( file(), data_offset, SEEK_SET );
 	if ( !seeksuccess )
 	{
-		data.num_of_nodes = new std::int32_t( number_of_nodes_in_graph );
-		//create arrays to store graph data.
-		data.adjmat = new std::uint8_t[ number_of_nodes_in_graph * number_of_nodes_in_graph ]();
-		data.degrees = new std::int32_t[ number_of_nodes_in_graph ]();
-		data.offsets = new std::uint32_t[ number_of_nodes_in_graph + 1 ]();
-
-		fread( data.degrees, sizeof( uint32_t ), number_of_nodes_in_graph, file() );
-		for ( size_t i = 0; i < number_of_nodes_in_graph; ++i )
-		{
-			data.offsets[ i + 1 ] = data.offsets[ i ] + data.degrees[ i ];
-		}
-		data.adjlist = new std::int32_t[ number_of_nodes_in_graph ]();
-
-		//create arrays to store graph file data.
-		std::unique_ptr<std::int32_t[]> vertex_ids( new int32_t[ number_of_nodes_in_file ]() );
-		std::unique_ptr<std::uint32_t[]> neighbour_offsets( new uint32_t[ number_of_nodes_in_file + 1 ]() );
-		std::unique_ptr<std::int32_t[]> neighbour_ids( new int32_t[ number_of_neighbours ]() );
-		std::unique_ptr<std::uint32_t[]> degree_counter( new uint32_t[ number_of_nodes_in_graph ]() );
-
-		fread( vertex_ids.get(), sizeof( int32_t ), number_of_nodes_in_file, file() );
-		fread( neighbour_offsets.get(), sizeof( uint32_t ), number_of_nodes_in_file + 1, file() );
-		fread( neighbour_ids.get(), sizeof( int32_t ), number_of_neighbours, file() );
-
-		size_t v, w;
-
-		//Transform graph file data into graph data.
-		for ( size_t i = 0; i < number_of_nodes_in_file; ++i )
-		{
-			v = vertex_ids[ i ] - 1;
-			for ( size_t j = neighbour_offsets[ i ]; j < neighbour_offsets[ i + 1 ]; ++j )
-			{
-				w = abs( neighbour_ids[ j ] ) - 1;
-				size_t index = v * number_of_neighbours + w;
-				size_t offset = data.offsets[ v ];
-
-				data.adjmat[ index ] = 1;
-				data.adjlist[ offset + degree_counter[ v ] ] = w;
-				degree_counter[ v ]++;
-
-				if ( neighbour_ids[ j ] >= 0 )
-				{
-					index = w * number_of_neighbours + v;
-					offset = data.offsets[ w ];
-
-					data.adjmat[ index ] = 1;
-					data.adjlist[ offset + degree_counter[ w ] ] = v;
-					degree_counter[ w ]++;
-				}
-			}
-		}
+		ArrayHandle compressed_data(size_data_compressed);
+		fread( compressed_data(), sizeof( std::uint8_t ), file() );
 	}
 	else
 	{
@@ -82,9 +56,9 @@ Data readData( const FileHandle &file, const uint16_t data_offset, const uint32_
 }
 
 
-Graph::Graph::Graph( const std::string fname, const MemoryLocation memloc )
+Graph::Graph::Graph( const std::string fname, const MemoryLocation memloc ) : memloc( memloc ), get( *this )
 {
-	FileHandle file( fname, "rb" );
+	FILEIO::FileHandle file( fname, "rb" );
 	//Check the file type.
 	char filetype[ 8 ];
 	fread( filetype, sizeof( char ), 8, file() );
@@ -92,45 +66,31 @@ Graph::Graph::Graph( const std::string fname, const MemoryLocation memloc )
 		std::uint8_t fileversion[ 2 ];
 		//Check file format version
 		fread( fileversion, sizeof( std::uint8_t ), 2, file() );
-		if ( fileversion[ 0 ] <= MAJOR_VERSION && fileversion[ 1 ] <= MINOR_VERSION )
+		if ( fileversion[ 0 ] <= _MAJOR_VERSION_ && fileversion[ 1 ] <= _MINOR_VERSION_ )
 		{
-			std::uint16_t parameter_offset, data_offset, graphtype;
-			std::uint32_t data_size, number_of_neighbours;
-			std::int32_t number_of_nodes_in_graph, number_of_nodes_in_file;
-
-			fread( &parameter_offset, sizeof( std::uint16_t ), 1, file() );			//parameter offset
-			fread( &data_offset, sizeof( std::uint16_t ), 1, file() );				//Data offset
-			fread( &data_size, sizeof( std::uint32_t ), 1, file() );				//Data size (B)
-			fread( &graphtype, sizeof( uint16_t ), 1, file() );						//Graph type
-			fread( &number_of_nodes_in_graph, sizeof( std::int32_t ), 1, file() );	//Number of nodes in the graph
-			fread( &number_of_nodes_in_file, sizeof( std::int32_t ), 1, file() );	//Number of nodes in the file
-			fread( &number_of_neighbours, sizeof( std::uint32_t ), 1, file() );		//Number of neighbours in the file
-
-			Data data = readData( file, data_offset, data_size, (GraphType) graphtype, number_of_nodes_in_graph, number_of_nodes_in_file, number_of_neighbours );
-
-			_memloc = memloc;
+		
 			//Once data is loaded into host memory it either kept in host memory or transfered to device memory.
 			if ( MemoryLocation::host == memloc )
 			{
-				_number_of_nodes = data.num_of_nodes;
-				_adjmat = data.adjmat;
-				_adjlist = data.adjlist;
-				_degrees = data.degrees;
-				_offsets = data.offsets;
+				number_of_nodes = num_of_nodes;
+				adjmat = data.adjmat;
+				adjlist = data.adjlist;
+				degrees = data.degrees;
+				offsets = data.offsets;
 			}
 			else if ( MemoryLocation::device == memloc )
 			{
-				cudaMalloc( (void**) &_number_of_nodes, sizeof( std::int32_t ) );
-				cudaMalloc( (void**) &_adjmat, sizeof( std::uint8_t )*number_of_nodes_in_graph*number_of_nodes_in_graph );
-				cudaMalloc( (void**) &_adjlist, sizeof( std::int32_t )*data.offsets[ number_of_nodes_in_graph + 1 ] );
-				cudaMalloc( (void**) &_degrees, sizeof( std::int32_t )*number_of_nodes_in_graph );
-				cudaMalloc( (void**) &_offsets, sizeof( std::uint32_t )*( number_of_nodes_in_graph + 1 ) );
+				cudaMalloc( (void**) &number_of_nodes, sizeof( std::int32_t ) );
+				cudaMalloc( (void**) &adjmat, sizeof( std::uint8_t )*number_of_nodes_in_graph*number_of_nodes_in_graph );
+				cudaMalloc( (void**) &adjlist, sizeof( std::int32_t )*data.offsets[ number_of_nodes_in_graph + 1 ] );
+				cudaMalloc( (void**) &degrees, sizeof( std::int32_t )*number_of_nodes_in_graph );
+				cudaMalloc( (void**) &offsets, sizeof( std::uint32_t )*( number_of_nodes_in_graph + 1 ) );
 
-				cudaMemcpy( _number_of_nodes, data.num_of_nodes, sizeof( std::int32_t ), cudaMemcpyHostToDevice );
-				cudaMemcpy( _adjmat, data.adjmat, sizeof( std::uint8_t )*number_of_nodes_in_graph*number_of_nodes_in_graph, cudaMemcpyHostToDevice );
-				cudaMemcpy( _adjlist, data.adjlist, sizeof( std::int32_t )*data.offsets[ number_of_nodes_in_graph + 1 ], cudaMemcpyHostToDevice );
-				cudaMemcpy( _degrees, data.degrees, sizeof( int32_t )*number_of_nodes_in_graph, cudaMemcpyHostToDevice );
-				cudaMemcpy( _offsets, data.offsets, sizeof( std::uint32_t )*( number_of_nodes_in_graph + 1 ), cudaMemcpyHostToDevice );
+				cudaMemcpy( number_of_nodes, data.num_of_nodes, sizeof( std::int32_t ), cudaMemcpyHostToDevice );
+				cudaMemcpy( adjmat, data.adjmat, sizeof( std::uint8_t )*number_of_nodes_in_graph*number_of_nodes_in_graph, cudaMemcpyHostToDevice );
+				cudaMemcpy( adjlist, data.adjlist, sizeof( std::int32_t )*data.offsets[ number_of_nodes_in_graph + 1 ], cudaMemcpyHostToDevice );
+				cudaMemcpy( degrees, data.degrees, sizeof( int32_t )*number_of_nodes_in_graph, cudaMemcpyHostToDevice );
+				cudaMemcpy( offsets, data.offsets, sizeof( std::uint32_t )*( number_of_nodes_in_graph + 1 ), cudaMemcpyHostToDevice );
 			}
 
 			data.num_of_nodes = nullptr;
@@ -152,19 +112,19 @@ Graph::Graph::Graph( const std::string fname, const MemoryLocation memloc )
 
 Graph::Graph::~Graph()
 {
-	if ( MemoryLocation::host == memory_location() )
+	if ( MemoryLocation::host == get.memory_location() )
 	{
-		delete _number_of_nodes;
-		delete[] _adjmat;
-		delete[] _adjlist;
-		delete[] _degrees;
-		delete[] _offsets;
+		delete number_of_nodes;
+		delete[] adjmat;
+		delete[] adjlist;
+		delete[] degrees;
+		delete[] offsets;
 	}
-	else if ( MemoryLocation::device == memory_location() )
+	else if ( MemoryLocation::device == get.memory_location() )
 	{
-		cudaFree( _adjmat );
-		cudaFree( _adjlist );
-		cudaFree( _degrees );
-		cudaFree( _offsets );
+		cudaFree( adjmat );
+		cudaFree( adjlist );
+		cudaFree( degrees );
+		cudaFree( offsets );
 	}
 }

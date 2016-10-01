@@ -33,10 +33,15 @@
     <CudaCompile Include="Source.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ArrayHandle.h" />
+    <ClInclude Include="Compression.h" />
     <ClInclude Include="DataStructures.h" />
+    <ClInclude Include="Graph_File_Header.h" />
+    <ClInclude Include="KDetails.h" />
     <ClInclude Include="File_IO.h" />
     <ClInclude Include="Graph.h" />
     <ClInclude Include="Ising_Spin_Model.h" />
+    <ClInclude Include="Parameters.h" />
     <ClInclude Include="Physical_Model.h" />
   </ItemGroup>
   <ItemGroup>
@@ -44,7 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Compression.cpp" />
-    <ClCompile Include="Graph_Parameters.cpp" />
+    <ClCompile Include="Graph_File_Header.cpp" />
     <ClCompile Include="Parameters.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>

@@ -1,9 +1,10 @@
+#include "Compression.h"
 #include "File_IO.h"
 
+using namespace kspace;
+using namespace FILEIO;
 
-using namespace kspace::FILEIO;
-
-Result Compression::deflate( const ArrayHandle& uncompressed_data )
+Compression::Result Compression::deflate( const ArrayHandle& uncompressed_data )
 {
 	ArrayHandle	compressed_data( uncompressed_data.const_size()*1.1 + 12 );
 	
@@ -26,10 +27,10 @@ Result Compression::deflate( const ArrayHandle& uncompressed_data )
 	details.bits.zerobit = 0;
 	details.bits.unitbit = 0;
 
-	return Result( compressed_data, details );
+	return Compression::Result( compressed_data, details );
 }
 
-Result Compression::deflate( const ArrayHandle& uncompressed_data, const Bits& bits )
+Compression::Result Compression::deflate( const ArrayHandle& uncompressed_data, const Compression::Bits& bits )
 {
 	//First bitpack the data.
 	ArrayHandle bitpacked_data = bit_pack( uncompressed_data, bits );
@@ -42,7 +43,7 @@ Result Compression::deflate( const ArrayHandle& uncompressed_data, const Bits& b
 	return compressed_data;
 }
 
-ArrayHandle Compression::inflate( const ArrayHandle& compressed_data, const Details &details )
+ArrayHandle Compression::inflate( const ArrayHandle& compressed_data, const Compression::Details &details )
 {
 	//First decompress the data into its unpacked state.
 	ArrayHandle unpacked_data( details.bitpacked_data_size );
@@ -71,7 +72,7 @@ ArrayHandle Compression::inflate( const ArrayHandle& compressed_data, const Deta
 }
 
 
-ArrayHandle Compression::bit_pack( const ArrayHandle &uncompressed_data, const Bits &bits)
+ArrayHandle Compression::bit_pack( const ArrayHandle &uncompressed_data, const Compression::Bits &bits )
 {
 	ArrayHandle bitpacked_data( ( uncompressed_data.const_size() / 8 ) + 1 );
 
@@ -89,7 +90,7 @@ ArrayHandle Compression::bit_pack( const ArrayHandle &uncompressed_data, const B
 	return bitpacked_data;
 }
 
-ArrayHandle Compression::bit_unpack( const ArrayHandle &bitpacked_data, const Details &details )
+ArrayHandle Compression::bit_unpack( const ArrayHandle &bitpacked_data, const Compression::Details &details )
 {
 	ArrayHandle uncompressed_data( details.uncompressed_data_size);
 

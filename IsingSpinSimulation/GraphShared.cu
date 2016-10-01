@@ -1,6 +1,7 @@
 #include "Graph.h"
+#include <string>
+using namespace kspace::GRAPH;
 
-using namespace kspace::Graph;
 
 GraphShared::GraphShared( GraphShared& other )
 {
