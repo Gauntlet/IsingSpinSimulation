@@ -35,12 +35,18 @@
   <ItemGroup>
     <ClInclude Include="ArrayHandle.h" />
     <ClInclude Include="Compression.h" />
+    <ClInclude Include="CrowdIdentification.h" />
     <ClInclude Include="DataStructures.h" />
+    <ClInclude Include="GraphShared.h" />
     <ClInclude Include="Graph_File_Header.h" />
+    <ClInclude Include="JaggedList.h" />
+    <ClInclude Include="JaggedListShared.h" />
     <ClInclude Include="KDetails.h" />
     <ClInclude Include="File_IO.h" />
     <ClInclude Include="Graph.h" />
     <ClInclude Include="Ising_Spin_Model.h" />
+    <ClInclude Include="Matrix.h" />
+    <ClInclude Include="MatrixShared.h" />
     <ClInclude Include="Parameters.h" />
     <ClInclude Include="Physical_Model.h" />
   </ItemGroup>

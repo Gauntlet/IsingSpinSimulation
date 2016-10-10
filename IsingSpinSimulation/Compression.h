@@ -2,9 +2,12 @@
 #define COMPRESSION_H
 
 #include "File_IO.h"
+#include "ArrayHandle.h"
 
-namespace kspace {
-	namespace FILEIO {
+namespace kspace
+{
+	namespace FILEIO
+	{
 		class Compression
 		{
 		public:
@@ -23,17 +26,17 @@ namespace kspace {
 				Bits bits;
 			};
 
-			struct Result
+			struct Compressed_Data
 			{
 				ArrayHandle data;
 				Details details;
 
-				Result( Result&& that ) : data( std::move( that.data ) ), details( that.details ) {};
-				Result( ArrayHandle &data, Details &details ) : data( std::move( data ) ), details( details ) {};
+				Compressed_Data( Compressed_Data&& that ) : data( std::move( that.data ) ), details( that.details ) {};
+				Compressed_Data( ArrayHandle &data, Details &details ) : data( std::move( data ) ), details( details ) {};
 			};
 
-			Result deflate( const ArrayHandle& uncompressed_data );
-			Result deflate( const ArrayHandle& uncompressed_data, const Bits& bits );
+			Compressed_Data deflate( const ArrayHandle& uncompressed_data );
+			Compressed_Data deflate( const ArrayHandle& uncompressed_data, const Bits& bits );
 
 			ArrayHandle inflate( const ArrayHandle& compressed_data, const Details& details );
 

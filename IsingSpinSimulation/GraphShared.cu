@@ -1,73 +1,50 @@
-#include "Graph.h"
+#include "GraphShared.h"
 #include <string>
 using namespace kspace::GRAPH;
 
-
-GraphShared::GraphShared( GraphShared& other )
+GraphShared::GraphShared(const std::string filename)
 {
-	( *this ).intermediary = other.intermediary;
-	( *this ).host = other.host;
-	( *this ).device = other.device;
-
-	other.intermediary = nullptr;
-	other.host = nullptr;
-	other.device = nullptr;
-}
-
-GraphShared::GraphShared( const std::string filename )
-{
-	host = new Graph( filename, MemoryLocation::host );
-	intermediary = new Graph( filename, MemoryLocation::device );
-
-	cudaMalloc( (void**) &device, sizeof( Graph ) );
-	cudaMemcpy( device, intermediary, sizeof( Graph ), cudaMemcpyHostToDevice );
+	host_ptr = new Graph( filename, MemoryLocation::host );
+	intermediary_ptr = new Graph( filename, MemoryLocation::device );
+	cudaMemcpy( device_ptr, intermediary_ptr, sizeof( Graph ), cudaMemcpyHostToDevice );
 }
 
 GraphShared::~GraphShared()
 {
 	if ( nullptr != device )
 	{
-		cudaFree( device );
+		cudaFree( device_ptr );
 	}
 
-	if ( nullptr != intermediary )
+	if ( nullptr != intermediary_ptr )
 	{
-		delete intermediary;
+		delete intermediary_ptr;
 	}
 
-	if ( nullptr != host )
+	if ( nullptr != host_ptr )
 	{
-		delete host;
+		delete host_ptr;
 	}
-}
-
-GraphShared& GraphShared::operator=( GraphShared&& rhs )
-{
-	( *this ).intermediary = rhs.intermediary;
-	( *this ).host = rhs.host;
-	( *this ).device = rhs.device;
-
-	rhs.intermediary = nullptr;
-	rhs.host = nullptr;
-	rhs.device = nullptr;
 }
 
 void GraphShared::host2device()
 {
-	const size_t N = host->number_of_nodes();
-	const size_t M = host->_offsets[ N ];
-	cudaMemcpy( intermediary->_adjmat, host->_adjmat, sizeof( std::uint8_t ) * N * N, cudaMemcpyHostToDevice );
-	cudaMemcpy( intermediary->_adjlist, host->_adjlist, sizeof( std::int32_t ) * M, cudaMemcpyHostToDevice );
-	cudaMemcpy( intermediary->_degrees, host->_degrees, sizeof( std::int32_t ) * N, cudaMemcpyHostToDevice );
-	cudaMemcpy( intermediary->_offsets, host->_offsets, sizeof( uint32_t ) * ( N + 1 ), cudaMemcpyHostToDevice );
+	const std::size_t N = host().get.number_of_nodes();
+	const std::size_t M = host().get.offset( N );
+
+	cudaMemcpy( intermediary().set.adjmat(),	host().get.adjmat(),	sizeof( std::uint8_t ) * N * N,	cudaMemcpyHostToDevice );
+	cudaMemcpy( intermediary().set.adjlist(),	host().get.adjlist(),	sizeof( std::int32_t ) * M,		cudaMemcpyHostToDevice );
+	cudaMemcpy( intermediary().set.degrees(),	host().get.degrees(),	sizeof( std::int32_t ) * N,		cudaMemcpyHostToDevice );
+	cudaMemcpy( intermediary().set.offsets(),	host().get.offsets(),	sizeof( uint32_t ) * ( N + 1 ),	cudaMemcpyHostToDevice );
 }
 
 void GraphShared::device2host()
 {
-	const size_t N = host->number_of_nodes();
-	const size_t M = host->_offsets[ N ];
-	cudaMemcpy( host->_adjmat, intermediary->_adjmat, sizeof( std::uint8_t ) * N * N, cudaMemcpyDeviceToHost );
-	cudaMemcpy( host->_adjlist, intermediary->_adjlist, sizeof( std::int32_t ) * M, cudaMemcpyDeviceToHost );
-	cudaMemcpy( host->_degrees, intermediary->_degrees, sizeof( std::int32_t ) * N, cudaMemcpyDeviceToHost );
-	cudaMemcpy( host->_offsets, intermediary->_offsets, sizeof( uint32_t ) * ( N + 1 ), cudaMemcpyDeviceToHost );
+	const std::size_t N = host().get.number_of_nodes();
+	const std::size_t M = host().get.offset( N );
+
+	cudaMemcpy( host().set.adjmat(),	intermediary().get.adjmat(),	sizeof( std::uint8_t ) * N * N,	cudaMemcpyDeviceToHost );
+	cudaMemcpy( host().set.adjlist(),	intermediary().get.adjlist(),	sizeof( std::int32_t ) * M,		cudaMemcpyDeviceToHost );
+	cudaMemcpy( host().set.degrees(),	intermediary().get.degrees(),	sizeof( std::int32_t ) * N,		cudaMemcpyDeviceToHost );
+	cudaMemcpy( host().set.offsets(),	intermediary().get.offsets(),	sizeof( uint32_t ) * ( N + 1 ),	cudaMemcpyDeviceToHost );
 }

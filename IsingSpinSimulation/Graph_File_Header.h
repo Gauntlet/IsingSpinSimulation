@@ -4,21 +4,23 @@
 #include <cstdint>
 #include "File_IO.h"
 #include "Graph.h"
+#include <zlib.h>
 
 namespace kspace
 {
 	namespace GRAPH
 	{
-		class Header {
-		private:
-			kspace::FILEIO::Byte header[ 70 ];
-		protected:
+		class Header
+		{
+			private:
+			static const size_t header_size = 44;
+			Byte header[ header_size ];
+			protected:
 			void init();
-			void clear_parameters();
 
 			class GET : public GET_SUPER < Header >
 			{
-			public:
+				public:
 				GET( const Header& parent ) : GET_SUPER::GET_SUPER( parent ) {};
 
 				std::uint8_t major() const;
@@ -32,15 +34,14 @@ namespace kspace
 				std::uint32_t size_data_uncompressed() const;
 				std::uint32_t size_data_bitpacked() const;
 				std::uint32_t size_data_compressed() const;
-				GRAPH::ID id() const;
-				std::int32_t number_of_nodes() const;
-				std::int32_t number_of_nodes_in_file() const;
-				std::uint32_t number_of_neighbour_in_file() const;
+				std::int32_t number_of_nodes_in_graph() const;
+				std::uint32_t number_of_edges_in_graph() const;
+				Graph::ID id() const;
 			};
 
 			class SET : public SET_SUPER < Header >
 			{
-			public:
+				public:
 				SET( Header& parent ) : SET_SUPER::SET_SUPER( parent ) {};
 
 				void major( const std::uint8_t );
@@ -51,15 +52,14 @@ namespace kspace
 				void size_data_uncompressed( const std::uint32_t );
 				void size_data_bitpacked( const std::uint32_t );
 				void size_data_compressed( const std::uint32_t );
-				void id( const ID );
 				void number_of_nodes_in_graph( const std::int32_t );
-				void number_of_nodes_in_file( const std::int32_t );
-				void number_of_neighbours_in_file( const std::uint32_t );
+				void number_of_edges_in_graph( const std::uint32_t );
+				void id( const ID );
 			};
 
-		public:
+			public:
 
-			enum
+			enum class OFFSET : size_t
 			{
 				FILE_ID = 0,
 				VERSION_MAJOR = 8,
@@ -73,32 +73,29 @@ namespace kspace
 				SIZE_D_BITPACKED = 27,
 				SIZE_D_COMPRESSED = 31,
 				NUMBER_OF_NODES_IN_GRAPH = 35,
-				NUMBER_OF_NODES_IN_FILE = 39,
-				NUMBER_OF_NEIGHBOURS_IN_FILE = 43,
-				GRAPH_ID = 47
+				NUMBER_OF_EDGES_IN_GRAPH = 39,
+				GRAPH_ID = 43
 			};
 
-			static struct
+			enum class FIELD_SIZE : size_t
 			{
-				size_t FILE_ID = 8;
-				size_t VERSION_MAJOR = 1;
-				size_t VERSION_MINOR = 1;
-				size_t OFFSET_PARAMETERS = 2;
-				size_t NUM_OF_PARAMETERS = 1;
-				size_t SIZE_P_UNCOMPRESSED = 4;
-				size_t SIZE_P_COMPRESSED = 4;
-				size_t OFFSET_DATA = 2;
-				size_t SIZE_D_UNCOMPRESSED = 4;
-				size_t SIZE_D_BITPACKED = 4;
-				size_t SIZE_D_COMPRESSED = 4;
-				size_t NUMBER_OF_NODES_IN_GRAPH = 4;
-				size_t NUMBER_OF_NODES_IN_FILE = 4;
-				size_t NUMBER_OF_NEIGHBOURS_IN_FILE = 4;
-				size_t GRAPH_ID = 1;
+				FILE_ID = 8,
+				VERSION_MAJOR = 1,
+				VERSION_MINOR = 1,
+				OFFSET_PARAMETERS = 2,
+				NUM_OF_PARAMETERS = 1,
+				SIZE_P_UNCOMPRESSED = 4,
+				SIZE_P_COMPRESSED = 4,
+				OFFSET_DATA = 2,
+				SIZE_D_UNCOMPRESSED = 4,
+				SIZE_D_BITPACKED = 4,
+				SIZE_D_COMPRESSED = 4,
+				NUMBER_OF_NODES_IN_GRAPH = 4,
+				NUMBER_OF_EDGES_IN_GRAPH = 4,
+				GRAPH_ID = 1
 			} field_size;
 
 			Header();
-			Header( Parameters &parameters );
 			Header( const FILEIO::FileHandle& file );
 
 			enum class GraphFileID { MATRIX, EDGE_LIST };

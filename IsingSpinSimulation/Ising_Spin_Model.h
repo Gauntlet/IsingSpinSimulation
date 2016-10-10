@@ -171,7 +171,7 @@ namespace kspace
 				return RANDOM;
 			}
 
-			__device__ size_t countNeighbourMatches( const Graph::Graph* graph, const Matrix<std::int8_t>* spin_states, const size_t time_step, const int n )
+			__device__ std::size_t countNeighbourMatches( const Graph::Graph* graph, const Matrix<std::int8_t>* spin_states, const std::size_t time_step, const int n )
 			{
 				int s = 0;
 				int m = -1;
@@ -187,7 +187,7 @@ namespace kspace
 				return s;
 			}
 
-			__device__ double calcFlipProb( const Graph::Graph* graph, const Matrix<std::int8_t>* spin_states, const double beta, const size_t time_step, const int n )
+			__device__ double calcFlipProb( const Graph::Graph* graph, const Matrix<std::int8_t>* spin_states, const double beta, const std::size_t time_step, const int n )
 			{
 				//Calculate the probability of vertex n flipping state.
 				int S = countNeighbourMatches( graph, spin_states, time_step, n );

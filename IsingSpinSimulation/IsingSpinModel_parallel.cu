@@ -5,11 +5,11 @@ using namespace kspace;
 using namespace IsingSpinModel;
 using namespace detail;
 
-__global__ void next_spin_change( const Graph::Graph* graph, Matrix<std::int8_t>* spin_states, curandState* globalState, const double beta, const size_t time_step )
+__global__ void next_spin_change( const Graph::Graph* graph, Matrix<std::int8_t>* spin_states, curandState* globalState, const double beta, const std::size_t time_step )
 {
 	int n = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if ( n < graph->number_of_nodes() )
+	if ( n < graph->get.number_of_nodes() )
 	{
 		double flip_prob = calcFlipProb( graph, spin_states, beta, time_step, n );
 		double RANDOM = generateIID( globalState, n );

@@ -23,8 +23,8 @@ inline void gpuAssert( cudaError_t code, const char* file, int line, bool abort 
 	}
 }
 
-void apsp_thread( std::int32_t* g_apsp, GRAPH &h_graph, const size_t N, const size_t n ) {
-	const size_t Nn = N*n;
+void apsp_thread( std::int32_t* g_apsp, Graph &h_graph, const std::size_t N, const std::size_t n ) {
+	const std::size_t Nn = N*n;
 	std::queue<std::uint16_t> q;
 	q.push( n );
 	g_apsp[ Nn + n ] = 0;
@@ -34,7 +34,7 @@ void apsp_thread( std::int32_t* g_apsp, GRAPH &h_graph, const size_t N, const si
 		m = q.front();
 		q.pop();
 
-		for ( size_t k = 0; k < h_graph.deglist[ m ]; k++ ) {
+		for ( std::size_t k = 0; k < h_graph.deglist[ m ]; k++ ) {
 			j = h_graph.adjlist[ m*h_graph.max_deg + k ];
 
 			if ( g_apsp[ Nn + j ] < 0 ) {
@@ -45,23 +45,23 @@ void apsp_thread( std::int32_t* g_apsp, GRAPH &h_graph, const size_t N, const si
 	}
 }
 
-void graph_apsp( std::int32_t* g_apsp, GRAPH &h_graph ) {
-	const size_t N = h_graph.NoV;
+void graph_apsp( std::int32_t* g_apsp, Graph &h_graph ) {
+	const std::size_t N = h_graph.NoV;
 	std::fill( g_apsp, g_apsp + N*N, -1 );
 
 	std::queue<std::uint16_t> q;
 	std::uint16_t j;
 	std::uint16_t m;
 
-	for ( size_t n = 0; n < N; n++ ) {
-		size_t Nn = N*n;
+	for ( std::size_t n = 0; n < N; n++ ) {
+		std::size_t Nn = N*n;
 		q.push( n );
 
 		while ( q.size() ) {
 			m = q.front();
 			q.pop();
 
-			for ( size_t k = 0; k < h_graph.deglist[ m ]; k++ ) {
+			for ( std::size_t k = 0; k < h_graph.deglist[ m ]; k++ ) {
 				j = h_graph.adjlist[ m*h_graph.max_deg + k ];
 
 				if ( g_apsp[ Nn + j ] < 0 ) {
@@ -74,7 +74,7 @@ void graph_apsp( std::int32_t* g_apsp, GRAPH &h_graph ) {
 	}
 }
 
-__global__ void running_average_kernel( std::int8_t* d_spin, const size_t N, const size_t T, const size_t window ) {
+__global__ void running_average_kernel( std::int8_t* d_spin, const std::size_t N, const std::size_t T, const std::size_t window ) {
 	int n = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if ( n < N ) {
@@ -118,14 +118,14 @@ __global__ void running_average_kernel( std::int8_t* d_spin, const size_t N, con
 	}
 }
 
-void noise_remover( std::int8_t* d_spin, const size_t N, const size_t T, const size_t window ) {
-	size_t blocksize = 256;
-	size_t blocknum = ( N / blocksize ) + 1;
+void noise_remover( std::int8_t* d_spin, const std::size_t N, const std::size_t T, const std::size_t window ) {
+	std::size_t blocksize = 256;
+	std::size_t blocknum = ( N / blocksize ) + 1;
 
 	running_average_kernel << <blocknum, blocksize >> >( d_spin, N, T, window );
 }
 
-__global__ void magnetisation_graph_kernel( std::int16_t* d_mag, std::int8_t* d_spin, const size_t N, const size_t T ) {
+__global__ void magnetisation_graph_kernel( std::int16_t* d_mag, std::int8_t* d_spin, const std::size_t N, const std::size_t T ) {
 	int t = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if ( t < T ) {
@@ -138,11 +138,11 @@ __global__ void magnetisation_graph_kernel( std::int16_t* d_mag, std::int8_t* d_
 }
 
 void magnetisation( MAGNETISATION &mag, std::int8_t* d_spin ) {
-	const size_t N = mag.N;
-	const size_t T = mag.T;
+	const std::size_t N = mag.N;
+	const std::size_t T = mag.T;
 
-	size_t blocksize = 256;
-	size_t blocknum = ( T / blocksize ) + 1;
+	std::size_t blocksize = 256;
+	std::size_t blocknum = ( T / blocksize ) + 1;
 
 	std::int16_t* d_mag;
 	cudaMalloc( (void**) &d_mag, sizeof( std::int16_t )*T );
@@ -158,7 +158,7 @@ void magnetisation( MAGNETISATION &mag, std::int8_t* d_spin ) {
 
 
 
-void componentBFS( std::vector<std::uint16_t> &sizes, std::int16_t* memberships, std::uint32_t N, std::int8_t* h_spins, GRAPH &h_graph ) {
+void componentBFS( std::vector<std::uint16_t> &sizes, std::int16_t* memberships, std::uint32_t N, std::int8_t* h_spins, Graph &h_graph ) {
 	std::fill( memberships, memberships + N, -1 );
 
 	std::uint16_t size = 0;
@@ -167,7 +167,7 @@ void componentBFS( std::vector<std::uint16_t> &sizes, std::int16_t* memberships,
 	std::queue<std::uint16_t> q;
 
 	std::uint16_t m, n;
-	for ( size_t i = 0; i < N; i++ ) {
+	for ( std::size_t i = 0; i < N; i++ ) {
 		if ( memberships[ i ] < 0 ) {
 			//printf("\t\t\t i = %d\n", i);
 			size = 0;
@@ -180,7 +180,7 @@ void componentBFS( std::vector<std::uint16_t> &sizes, std::int16_t* memberships,
 
 				//printf("\t\t\t\t m = %d | K = %d\n", m, h_graph.deglist[m]);
 
-				for ( size_t k = 0; k < h_graph.deglist[ m ]; k++ ) {
+				for ( std::size_t k = 0; k < h_graph.deglist[ m ]; k++ ) {
 					n = h_graph.adjlist[ m*h_graph.max_deg + k ];
 					if ( memberships[ n ] < 0 && h_spins[ m ] == h_spins[ n ] ) {
 						memberships[ n ] = comp;
@@ -195,12 +195,12 @@ void componentBFS( std::vector<std::uint16_t> &sizes, std::int16_t* memberships,
 	}
 }
 
-void crowdSizeDists( jaggedlist<std::uint16_t> &h_crowdsizes, std::int8_t* h_spins, GRAPH &h_graph, const size_t N, const size_t T, const size_t interval ) {
+void crowdSizeDists( jaggedlist<std::uint16_t> &h_crowdsizes, std::int8_t* h_spins, Graph &h_graph, const std::size_t N, const std::size_t T, const std::size_t interval ) {
 	std::int16_t* memberships = new std::int16_t[ N ]();
 
 
-	size_t step = 0;
-	for ( size_t t = 0; t < T; t += interval ) {
+	std::size_t step = 0;
+	for ( std::size_t t = 0; t < T; t += interval ) {
 		h_crowdsizes.set_size( step + 1 );
 		componentBFS( h_crowdsizes[ step ], memberships, N, h_spins + t*N, h_graph );
 		//printf("\t\tt=%d | s = %d\n", t, h_crowdsizes[step].size());
@@ -210,7 +210,7 @@ void crowdSizeDists( jaggedlist<std::uint16_t> &h_crowdsizes, std::int8_t* h_spi
 	delete[] memberships;
 }
 
-std::int32_t identify_features( std::int32_t* h_features, std::int8_t* h_spins, GRAPH &h_graph, const size_t N, const size_t T ) {
+std::int32_t identify_features( std::int32_t* h_features, std::int8_t* h_spins, Graph &h_graph, const std::size_t N, const std::size_t T ) {
 	struct dim2 {
 		std::uint16_t v;
 		std::uint16_t t;
@@ -231,12 +231,12 @@ std::int32_t identify_features( std::int32_t* h_features, std::int8_t* h_spins, 
 
 	std::uint16_t m, K;
 
-	size_t vcount;
+	std::size_t vcount;
 
 	std::uint16_t t1, t2;
 
-	for ( size_t t = 0; t < T; t++ ) {
-		for ( size_t i = 0; i < N; i++ ) {
+	for ( std::size_t t = 0; t < T; t++ ) {
+		for ( std::size_t i = 0; i < N; i++ ) {
 			if ( h_features[ N*t + i ] < 0 ) {
 				f++;
 				h_features[ N*t + i ] = f;
@@ -312,14 +312,14 @@ __global__ void membership_pathlength_kernel( float* d_memberships_apl, float* d
 	}
 }
 
-//oid membershipBFS_thread(std::int16_t* h_memberships, std::uint16_t* h_apsp, std::int8_t* h_spins, GRAPH &h_graph, const size_t N, const size_t t)
-void membershipBFS_thread( std::int16_t* h_memberships, std::uint16_t* h_membership_count, std::uint16_t* h_apsp, std::int8_t* h_spins, GRAPH* h_graph_ptr, const size_t N, const size_t t ) {
-	GRAPH &h_graph =* h_graph_ptr;
+//oid membershipBFS_thread(std::int16_t* h_memberships, std::uint16_t* h_apsp, std::int8_t* h_spins, Graph &h_graph, const std::size_t N, const std::size_t t)
+void membershipBFS_thread( std::int16_t* h_memberships, std::uint16_t* h_membership_count, std::uint16_t* h_apsp, std::int8_t* h_spins, Graph* h_graph_ptr, const std::size_t N, const std::size_t t ) {
+	Graph &h_graph =* h_graph_ptr;
 	const std::uint16_t inf = ( std::uint16_t ) - 1;
 
 	//Variable required to reduce calculation operations.
-	size_t NT = N*t;
-	size_t iN;
+	std::size_t NT = N*t;
+	std::size_t iN;
 
 	std::int8_t s;
 	std::uint16_t m, n;
@@ -327,7 +327,7 @@ void membershipBFS_thread( std::int16_t* h_memberships, std::uint16_t* h_members
 
 	std::queue<std::uint16_t> q;
 	h_membership_count[ t ] = 0;
-	for ( size_t i = 0; i < N; i++ ) {
+	for ( std::size_t i = 0; i < N; i++ ) {
 
 		//If a vertex dow not have a membership id then it is a new crowd.
 		if ( h_memberships[ NT + i ] < 0 ) {
@@ -345,7 +345,7 @@ void membershipBFS_thread( std::int16_t* h_memberships, std::uint16_t* h_members
 
 				//printf("\t\t\t\t m = %d | K = %d\n", m, h_graph.deglist[m]);
 
-				for ( size_t k = 0; k < h_graph.deglist[ m ]; k++ ) {
+				for ( std::size_t k = 0; k < h_graph.deglist[ m ]; k++ ) {
 					n = h_graph.adjlist[ m*h_graph.max_deg + k ];
 					if ( h_memberships[ NT + n ] < 0 && h_spins[ NT + n ] == s ) {
 						h_memberships[ NT + n ] = mbrid;
@@ -360,7 +360,7 @@ void membershipBFS_thread( std::int16_t* h_memberships, std::uint16_t* h_members
 	std::fill( h_apsp, h_apsp + N*N, inf );
 
 	//Use BFS to calculate the APSP of every vertex.
-	for ( size_t i = 0; i < N; i++ ) {
+	for ( std::size_t i = 0; i < N; i++ ) {
 		iN = i*N;
 
 		h_apsp[ iN + i ] = 0;
@@ -371,7 +371,7 @@ void membershipBFS_thread( std::int16_t* h_memberships, std::uint16_t* h_members
 			m = q.front();
 			q.pop();
 
-			for ( size_t k = 0; k < h_graph.deglist[ m ]; k++ ) {
+			for ( std::size_t k = 0; k < h_graph.deglist[ m ]; k++ ) {
 				n = h_graph.adjlist[ m*h_graph.max_deg + k ];
 				if ( h_memberships[ NT + n ] == mbrid ) {
 					if ( h_apsp[ iN + n ] == inf ) {
@@ -384,16 +384,16 @@ void membershipBFS_thread( std::int16_t* h_memberships, std::uint16_t* h_members
 	}
 }
 
-void membershipBFS( std::int16_t* h_memberships, std::uint16_t* h_membership_count, float* h_memberships_apl, float* h_memberships_mpl, std::int8_t* h_spins, GRAPH &h_graph, const std::uint32_t N, const std::uint32_t T, const std::uint32_t mixing_time ) {
+void membershipBFS( std::int16_t* h_memberships, std::uint16_t* h_membership_count, float* h_memberships_apl, float* h_memberships_mpl, std::int8_t* h_spins, Graph &h_graph, const std::uint32_t N, const std::uint32_t T, const std::uint32_t mixing_time ) {
 	//cuda kernel block variables.
-	size_t blocksize = 256;
-	size_t blocknum = ( N / blocksize ) + 1;
+	std::size_t blocksize = 256;
+	std::size_t blocknum = ( N / blocksize ) + 1;
 
-	const size_t numOfThr = 7;
+	const std::size_t numOfThr = 7;
 	std::thread bfs_threads[ numOfThr ];
 	//Data arrays required for the APSP.
 	std::uint16_t* *h_apsps = new std::uint16_t*[ numOfThr ];
-	for ( size_t thrid = 0; thrid < numOfThr; thrid++ ) {
+	for ( std::size_t thrid = 0; thrid < numOfThr; thrid++ ) {
 		h_apsps[ thrid ] = new std::uint16_t[ N*N ]();
 	}
 
@@ -407,13 +407,13 @@ void membershipBFS( std::int16_t* h_memberships, std::uint16_t* h_membership_cou
 	cudaMalloc( (void**) &d_memberships_apl, sizeof( float )*N*T );
 	cudaMalloc( (void**) &d_memberships_mpl, sizeof( float )*N*T );
 
-	for ( size_t t = mixing_time; t < T; t += numOfThr ) {
+	for ( std::size_t t = mixing_time; t < T; t += numOfThr ) {
 		if ( t % ( numOfThr * 10 ) == 0 ) {
 			printf( "t: %d / %d\n", t, T - 1 );
 		}
 
 		//Launch threads threads to do both BFS'.
-		for ( size_t thrid = 0; thrid < numOfThr; thrid++ ) {
+		for ( std::size_t thrid = 0; thrid < numOfThr; thrid++ ) {
 			if ( t + thrid < T ) {
 				bfs_threads[ thrid ] = std::thread( membershipBFS_thread, h_memberships, h_membership_count, h_apsps[ thrid ], h_spins, &h_graph, N, t + thrid );
 			}
@@ -421,7 +421,7 @@ void membershipBFS( std::int16_t* h_memberships, std::uint16_t* h_membership_cou
 
 
 		//Join the the threads and comput the apl's and mpl's for each vertex.
-		for ( size_t thrid = 0; thrid < numOfThr; thrid++ ) {
+		for ( std::size_t thrid = 0; thrid < numOfThr; thrid++ ) {
 			if ( t + thrid < T ) {
 				bfs_threads[ thrid ].join();
 				cudaMemcpy( d_apsp, h_apsps[ thrid ], sizeof( std::uint16_t )*N*N, cudaMemcpyHostToDevice );
@@ -433,7 +433,7 @@ void membershipBFS( std::int16_t* h_memberships, std::uint16_t* h_membership_cou
 	cudaMemcpy( h_memberships_apl, d_memberships_apl, sizeof( float )*N*T, cudaMemcpyDeviceToHost );
 	cudaMemcpy( h_memberships_mpl, d_memberships_mpl, sizeof( float )*N*T, cudaMemcpyDeviceToHost );
 
-	for ( size_t thrid = 0; thrid < numOfThr; thrid++ ) {
+	for ( std::size_t thrid = 0; thrid < numOfThr; thrid++ ) {
 		delete[] h_apsps[ thrid ];
 	}
 	delete[] h_apsps;
@@ -466,7 +466,7 @@ __global__ void set_segment_kernel( std::int32_t* d_segments, std::int16_t* d_me
 	}
 }
 
-std::uint32_t identify_segments( SEGMENTS &h_segments, std::int16_t* h_memberships, float* h_memberships_apl, float* h_memberships_mpl, std::int8_t* h_spins, GRAPH &h_graph, const std::uint32_t N, const std::uint32_t T, const std::uint32_t mixing_time ) {
+std::uint32_t identify_segments( SEGMENTS &h_segments, std::int16_t* h_memberships, float* h_memberships_apl, float* h_memberships_mpl, std::int8_t* h_spins, Graph &h_graph, const std::uint32_t N, const std::uint32_t T, const std::uint32_t mixing_time ) {
 	printf( "Identifying memberships\n" );
 
 	//Compute the memberships at every time step.
@@ -483,8 +483,8 @@ std::uint32_t identify_segments( SEGMENTS &h_segments, std::int16_t* h_membershi
 
 	std::uint8_t* progression_check = new std::uint8_t[ N*N ]();
 
-	size_t blocksize = 256;
-	size_t blocknum = ( N / blocksize ) + 1;
+	std::size_t blocksize = 256;
+	std::size_t blocknum = ( N / blocksize ) + 1;
 
 	std::int16_t* d_memberships;
 	cudaMalloc( (void**) &d_memberships, sizeof( std::int16_t )*N*T );
@@ -498,9 +498,9 @@ std::uint32_t identify_segments( SEGMENTS &h_segments, std::int16_t* h_membershi
 	std::int32_t curr_segment;
 	std::int16_t crowd;
 
-	const size_t t_start = mixing_time;
+	const std::size_t t_start = mixing_time;
 
-	for ( size_t i = 0; i < N; i++ ) {
+	for ( std::size_t i = 0; i < N; i++ ) {
 		h_segments.partitions[ N*t_start + i ] = h_memberships[ N*t_start + i ];
 		if ( h_memberships[ N*t_start + i ] > segment ) {
 			segment = h_memberships[ N*t_start + i ];
@@ -513,7 +513,7 @@ std::uint32_t identify_segments( SEGMENTS &h_segments, std::int16_t* h_membershi
 
 	printf( "Identifying Segments\n" );
 
-	for ( size_t t = t_start; t < T; t++ ) {
+	for ( std::size_t t = t_start; t < T; t++ ) {
 		if ( t % 200 == 0 ) {
 			printf( "t: %d / %d\n", t, T - 1 );
 		}
@@ -522,7 +522,7 @@ std::uint32_t identify_segments( SEGMENTS &h_segments, std::int16_t* h_membershi
 		//Reset the progression check matrix at the beginning of every time step.
 		std::fill( progression_check, progression_check + N*N, 0 );
 
-		for ( size_t n = 0; n < N; n++ ) {
+		for ( std::size_t n = 0; n < N; n++ ) {
 			//Check every vertex at time t to see if it part of a segment.
 			//If it is not part of a segment that vertex's crowd is made 
 			//into a new segment.
@@ -551,7 +551,7 @@ std::uint32_t identify_segments( SEGMENTS &h_segments, std::int16_t* h_membershi
 					similarity = 0.;
 					curr_mag = 0;
 					next_mag = 0;
-					for ( size_t i = 0; i < N; i++ ) {
+					for ( std::size_t i = 0; i < N; i++ ) {
 						//Compute the size of the current crowd.
 						if ( h_memberships[ N*t + i ] == curr_mbrid ) {
 							curr_mag++;
@@ -593,16 +593,16 @@ std::uint32_t identify_segments( SEGMENTS &h_segments, std::int16_t* h_membershi
 	return segment + 1;
 }
 
-void membership_similarity_thread( float* h_memsim, float* h_memsize, std::int16_t* h_memberships, std::int8_t* h_spins, const std::uint32_t N, const std::uint32_t T, const std::uint32_t t, const size_t thrid ) {
+void membership_similarity_thread( float* h_memsim, float* h_memsize, std::int16_t* h_memberships, std::int8_t* h_spins, const std::uint32_t N, const std::uint32_t T, const std::uint32_t t, const std::size_t thrid ) {
 	if ( t < T - 1 ) {
 		//Initialise the similarity matrix and member size array to zeros.
 		std::fill( h_memsim, h_memsim + N*N, 0.f );
 		std::fill( h_memsize, h_memsize + 2 * N, 0.f );
 
-		size_t tN, tNp1;
+		std::size_t tN, tNp1;
 		std::int16_t memt, memtp1;
 
-		for ( size_t i = 0; i < N; i++ ) {
+		for ( std::size_t i = 0; i < N; i++ ) {
 			//store repeatedly calculated values in variables to slightly speed up things.
 			tN = ( t + thrid )*N;
 			tNp1 = ( t + thrid )*N + N;
@@ -620,7 +620,7 @@ void membership_similarity_thread( float* h_memsim, float* h_memsize, std::int16
 	}
 }
 
-__global__ void membership_similarity_normalise_kernel( float* d_memsim, float* d_memsize, const size_t N, const size_t R, const size_t C ) {
+__global__ void membership_similarity_normalise_kernel( float* d_memsim, float* d_memsize, const std::size_t N, const std::size_t R, const std::size_t C ) {
 	int r = blockDim.x * blockIdx.x + threadIdx.x;
 	int c = blockDim.y * blockIdx.y + threadIdx.y;
 
@@ -629,7 +629,7 @@ __global__ void membership_similarity_normalise_kernel( float* d_memsim, float* 
 	}
 }
 
-__global__ void membership_similarity_threshold_kernel( std::int16_t* d_bckmemlink, float* d_memsim, const size_t N, const size_t R, const size_t C, const size_t t ) {
+__global__ void membership_similarity_threshold_kernel( std::int16_t* d_bckmemlink, float* d_memsim, const std::size_t N, const std::size_t R, const std::size_t C, const std::size_t t ) {
 	int r = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if ( r < R ) {
@@ -651,7 +651,7 @@ __global__ void membership_similarity_threshold_kernel( std::int16_t* d_bckmemli
 	}
 }
 
-__global__ void segment_progression_kernel( std::int32_t* d_membership_segmentids, std::int16_t* d_bckmemlink, std::uint16_t* d_memcount, std::int32_t* d_segid, const size_t N, const size_t T, const size_t t ) {
+__global__ void segment_progression_kernel( std::int32_t* d_membership_segmentids, std::int16_t* d_bckmemlink, std::uint16_t* d_memcount, std::int32_t* d_segid, const std::size_t N, const std::size_t T, const std::size_t t ) {
 	int m = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if ( m < d_memcount[ t ] ) {
@@ -667,7 +667,7 @@ __global__ void segment_progression_kernel( std::int32_t* d_membership_segmentid
 	}
 }
 
-__global__ void segment_setter_kernel( std::int32_t* d_segment, std::int32_t* d_membership_segmentids, std::int16_t* d_memberships, std::uint16_t* d_memberships_count, const size_t N, const size_t T, const size_t analysis_time ) {
+__global__ void segment_setter_kernel( std::int32_t* d_segment, std::int32_t* d_membership_segmentids, std::int16_t* d_memberships, std::uint16_t* d_memberships_count, const std::size_t N, const std::size_t T, const std::size_t analysis_time ) {
 	int n = blockDim.x * blockIdx.x + threadIdx.x;
 	int t = blockDim.y * blockIdx.y + threadIdx.y;
 
@@ -679,14 +679,14 @@ __global__ void segment_setter_kernel( std::int32_t* d_segment, std::int32_t* d_
 	}
 }
 
-std::uint32_t identify_segments2( SEGMENTS &h_segments, std::int16_t* h_memberships, float* h_memberships_apl, float* h_memberships_mpl, std::int8_t* d_spins, std::int8_t* h_spins, GRAPH &h_graph, const std::uint32_t N, const std::uint32_t T, const std::uint32_t analysis_time ) {
+std::uint32_t identify_segments2( SEGMENTS &h_segments, std::int16_t* h_memberships, float* h_memberships_apl, float* h_memberships_mpl, std::int8_t* d_spins, std::int8_t* h_spins, Graph &h_graph, const std::uint32_t N, const std::uint32_t T, const std::uint32_t analysis_time ) {
 	//The arrays required to compute the segment progressions.
 	std::int16_t* d_memberships;				//The membership partitions for each time step.
 	std::uint16_t* d_membership_count;			//The number of memberships at time t.
 	std::uint16_t* d_deglist;					//Graph degree list.
 	std::uint16_t* d_adjlist;					//Graph adjacency list.
 
-	size_t K = h_graph.max_deg;	//The maximum degree in the graph.
+	std::size_t K = h_graph.max_deg;	//The maximum degree in the graph.
 
 	cudaMalloc( (void**) &d_memberships, sizeof( std::int16_t )*N*T );
 	cudaMalloc( (void**) &d_membership_count, sizeof( std::uint16_t )*T );
@@ -706,14 +706,14 @@ std::uint32_t identify_segments2( SEGMENTS &h_segments, std::int16_t* h_membersh
 	cudaMemcpy( h_membership_counts, d_membership_count, sizeof( std::uint16_t )*T, cudaMemcpyDeviceToHost );
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	const size_t numOfThreads = 7;
+	const std::size_t numOfThreads = 7;
 	std::thread* threads = new std::thread[ numOfThreads ];
 
 	float* *h_memsims = new float*[ numOfThreads ];	//The membership similarity matrices for each thread.	
 	float* *h_memsizes = new float*[ numOfThreads ];	//The sizes of each membership for each thread.
 
 	//Create the similarity matrices and membership size arrays.
-	for ( size_t thr = 0; thr < numOfThreads; thr++ ) {
+	for ( std::size_t thr = 0; thr < numOfThreads; thr++ ) {
 		h_memsims[ thr ] = new float[ N*N ]();
 		h_memsizes[ thr ] = new float[ 2 * N ]();
 	}
@@ -744,7 +744,7 @@ std::uint32_t identify_segments2( SEGMENTS &h_segments, std::int16_t* h_membersh
 	blocknum.x = ( N / blocksize.x ) + 1;
 	blocknum.y = ( N / blocksize.y ) + 1;
 
-	size_t R, C;
+	std::size_t R, C;
 
 	/*
 	std::fill(h_memberships, h_memberships + T*N, -1);
@@ -754,7 +754,7 @@ std::uint32_t identify_segments2( SEGMENTS &h_segments, std::int16_t* h_membersh
 	*/
 
 	printf( "\t\tIdentifying segments\n" );
-	for ( size_t t = analysis_time; t < T - numOfThreads; t += numOfThreads ) {
+	for ( std::size_t t = analysis_time; t < T - numOfThreads; t += numOfThreads ) {
 		/*
 		if (t % (numOfThreads * 10) == 0) {
 		printf("t: %d / %d\n", t, T);
@@ -762,11 +762,11 @@ std::uint32_t identify_segments2( SEGMENTS &h_segments, std::int16_t* h_membersh
 		*/
 
 		//Create threads to compute the similarity between memberships at time t and t+1.
-		for ( size_t thr = 0; thr < numOfThreads; thr++ ) {
+		for ( std::size_t thr = 0; thr < numOfThreads; thr++ ) {
 			threads[ thr ] = std::thread( membership_similarity_thread, h_memsims[ thr ], h_memsizes[ thr ], h_memberships, h_spins, N, T, t, thr );
 		}
 
-		for ( size_t thr = 0; thr < numOfThreads; thr++ ) {
+		for ( std::size_t thr = 0; thr < numOfThreads; thr++ ) {
 			//Join the threads.
 			threads[ thr ].join();
 
@@ -786,7 +786,7 @@ std::uint32_t identify_segments2( SEGMENTS &h_segments, std::int16_t* h_membersh
 	}
 
 	//Compute the membership segment ids.
-	for ( size_t t = analysis_time; t < T; t++ ) {
+	for ( std::size_t t = analysis_time; t < T; t++ ) {
 		segment_progression_kernel << < ( N / 256 ) + 1, 256 >> >( d_membership_segmentids, d_bckmemlink, d_membership_count, d_segid, N, T, t );
 		cudaDeviceSynchronize();
 	}
@@ -816,7 +816,7 @@ std::uint32_t identify_segments2( SEGMENTS &h_segments, std::int16_t* h_membersh
 	cudaFree( d_deglist );
 	cudaFree( d_adjlist );
 
-	for ( size_t thr = 0; thr < numOfThreads; thr++ ) {
+	for ( std::size_t thr = 0; thr < numOfThreads; thr++ ) {
 		delete[] h_memsims[ thr ];
 		delete[] h_memsizes[ thr ];
 	}
@@ -832,12 +832,12 @@ std::uint32_t identify_segments2( SEGMENTS &h_segments, std::int16_t* h_membersh
 void compute_lifetimes( SEGMENTS &h_segments, const std::uint32_t mixing_time ) {
 	std::fill( h_segments.birthdeath, h_segments.birthdeath + 2 * h_segments.S, -1 );
 
-	const size_t init_t = mixing_time;
+	const std::size_t init_t = mixing_time;
 	std::int32_t seg;
 
-	for ( size_t t = init_t; t < h_segments.T; t++ ) {
-		size_t Nt = h_segments.N * t;
-		for ( size_t n = 0; n < h_segments.N; n++ ) {
+	for ( std::size_t t = init_t; t < h_segments.T; t++ ) {
+		std::size_t Nt = h_segments.N * t;
+		for ( std::size_t n = 0; n < h_segments.N; n++ ) {
 			seg = h_segments.partitions[ Nt + n ];
 
 			if ( seg >= 0 ) {
@@ -857,18 +857,18 @@ void compute_lifetimes( SEGMENTS &h_segments, const std::uint32_t mixing_time ) 
 	}
 }
 
-__global__ void divide_apl_kernel( float* d_segment_apl, std::uint16_t* d_segment_pop, std::uint16_t* d_birthdeath, const size_t T ) {
+__global__ void divide_apl_kernel( float* d_segment_apl, std::uint16_t* d_segment_pop, std::uint16_t* d_birthdeath, const std::size_t T ) {
 	int t = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if ( t < T ) {
 	}
 }
 
-void compute_segment_centres_thread( SEGMENTS* h_segments, float* h_memberships_apl, float* h_memberships_mpl, std::int32_t* g_apsp, size_t N, const size_t t ) {
+void compute_segment_centres_thread( SEGMENTS* h_segments, float* h_memberships_apl, float* h_memberships_mpl, std::int32_t* g_apsp, std::size_t N, const std::size_t t ) {
 	std::int32_t seg;
-	size_t relt;
+	std::size_t relt;
 
-	for ( size_t n = 0; n < N; n++ ) {
+	for ( std::size_t n = 0; n < N; n++ ) {
 		seg = h_segments->partitions[ N*t + n ];
 		relt = t - h_segments->birthdeath[ 2 * seg ];
 		if ( relt == 0 ) {
@@ -883,11 +883,11 @@ void compute_segment_centres_thread( SEGMENTS* h_segments, float* h_memberships_
 	}
 }
 
-void compute_pathlengths_thread( SEGMENTS* h_segments, float* h_memberships_apl, float* h_memberships_mpl, std::int32_t* g_apsp, size_t N, const size_t t ) {
+void compute_pathlengths_thread( SEGMENTS* h_segments, float* h_memberships_apl, float* h_memberships_mpl, std::int32_t* g_apsp, std::size_t N, const std::size_t t ) {
 	std::int32_t seg;
-	size_t relt;
+	std::size_t relt;
 
-	for ( size_t n = 0; n < N; n++ ) {
+	for ( std::size_t n = 0; n < N; n++ ) {
 		seg = h_segments->partitions[ N*t + n ];
 		relt = t - h_segments->birthdeath[ 2 * seg ];
 
@@ -904,7 +904,7 @@ void compute_pathlengths_thread( SEGMENTS* h_segments, float* h_memberships_apl,
 			h_segments->apl_min[ seg ][ relt ] = h_memberships_apl[ N*t + n ];
 
 			//Distance from the starting vertex
-			size_t tmpind = h_segments->centre[ seg ] * N + n;
+			std::size_t tmpind = h_segments->centre[ seg ] * N + n;
 			h_segments->dist_from_start[ seg ][ relt ] = (float) g_apsp[ tmpind ];
 		}
 
@@ -913,26 +913,26 @@ void compute_pathlengths_thread( SEGMENTS* h_segments, float* h_memberships_apl,
 	}
 }
 
-void compute_pathlengths( SEGMENTS &h_segments, float* h_memberships_apl, float* h_memberships_mpl, std::int32_t* g_apsp, const size_t analysis_time ) {
+void compute_pathlengths( SEGMENTS &h_segments, float* h_memberships_apl, float* h_memberships_mpl, std::int32_t* g_apsp, const std::size_t analysis_time ) {
 	printf( "\t\t[%d, %d, %d, %d]\n", h_segments.N, h_segments.T, h_segments.S, h_segments.ML );
 
 	if ( h_segments.S > 0 ) {
 		std::int32_t seg;
 		std::uint32_t relt;
 
-		const size_t N = h_segments.N;
+		const std::size_t N = h_segments.N;
 
-		const size_t numOfThreads = 7;
+		const std::size_t numOfThreads = 7;
 		std::thread threads[ numOfThreads ];
 
 		// Find the first centre vertex of every segment.
-		for ( size_t t = analysis_time; t < h_segments.T; t += numOfThreads ) {
-			for ( size_t thr = 0; thr < numOfThreads; thr++ ) {
+		for ( std::size_t t = analysis_time; t < h_segments.T; t += numOfThreads ) {
+			for ( std::size_t thr = 0; thr < numOfThreads; thr++ ) {
 				if ( t + thr < h_segments.T ) {
 					threads[ thr ] = std::thread( compute_segment_centres_thread, &h_segments, h_memberships_apl, h_memberships_mpl, g_apsp, N, t + thr );
 				}
 			}
-			for ( size_t thr = 0; thr < numOfThreads; thr++ ) {
+			for ( std::size_t thr = 0; thr < numOfThreads; thr++ ) {
 				if ( t + thr < h_segments.T ) {
 					if ( threads[ thr ].joinable() ) {
 						threads[ thr ].join();
@@ -942,13 +942,13 @@ void compute_pathlengths( SEGMENTS &h_segments, float* h_memberships_apl, float*
 		}
 
 		// Calculate the average, shortest average, longest average and maximum pathlength of every segment for every timestep it exists.
-		for ( size_t t = analysis_time; t < h_segments.T; t += numOfThreads ) {
-			for ( size_t thr = 0; thr < numOfThreads; thr++ ) {
+		for ( std::size_t t = analysis_time; t < h_segments.T; t += numOfThreads ) {
+			for ( std::size_t thr = 0; thr < numOfThreads; thr++ ) {
 				if ( t + thr < h_segments.T ) {
 					threads[ thr ] = std::thread( compute_pathlengths_thread, &h_segments, h_memberships_apl, h_memberships_mpl, g_apsp, N, t + thr );
 				}
 			}
-			for ( size_t thr = 0; thr < numOfThreads; thr++ ) {
+			for ( std::size_t thr = 0; thr < numOfThreads; thr++ ) {
 				if ( t + thr < h_segments.T ) {
 					if ( threads[ thr ].joinable() ) {
 						threads[ thr ].join();
@@ -959,16 +959,16 @@ void compute_pathlengths( SEGMENTS &h_segments, float* h_memberships_apl, float*
 
 
 		// Divide the average pathlength of the segments by the population at each timestep they exists.
-		for ( size_t s = 0; s < h_segments.S; s++ ) {
-			for ( size_t l = 0; l < h_segments.lifetimes[ s ]; l++ ) {
+		for ( std::size_t s = 0; s < h_segments.S; s++ ) {
+			for ( std::size_t l = 0; l < h_segments.lifetimes[ s ]; l++ ) {
 				h_segments.apl[ s ][ l ] /= (float) h_segments.pop[ s ][ l ];
 			}
 		}
 
 
 		//Calculate the variance of the average pathlengths of the segments for each timestep they exists.
-		for ( size_t t = analysis_time; t < h_segments.T; t++ ) {
-			for ( size_t n = 0; n < N; n++ ) {
+		for ( std::size_t t = analysis_time; t < h_segments.T; t++ ) {
+			for ( std::size_t n = 0; n < N; n++ ) {
 				seg = h_segments.partitions[ N*t + n ];
 				relt = ( std::uint32_t ) t - h_segments.birthdeath[ 2 * seg ];
 				h_segments.vpl[ seg ][ relt ] += (float) std::pow( h_memberships_apl[ N*t + n ] - h_segments.apl[ seg ][ relt ], 2. );
@@ -977,8 +977,8 @@ void compute_pathlengths( SEGMENTS &h_segments, float* h_memberships_apl, float*
 
 
 		// Divide the variance of the average pathlengths of the segments by the population for each timestep they exists.
-		for ( size_t s = 0; s < h_segments.S; s++ ) {
-			for ( size_t l = 0; l < h_segments.lifetimes[ s ]; l++ ) {
+		for ( std::size_t s = 0; s < h_segments.S; s++ ) {
+			for ( std::size_t l = 0; l < h_segments.lifetimes[ s ]; l++ ) {
 				h_segments.vpl[ s ][ l ] /= (float) h_segments.pop[ s ][ l ];
 			}
 		}
@@ -990,7 +990,7 @@ __device__ int nchoosek(const float n, const float k) {
 return tgamma(n + 1) / (tgamma(n - k + 1.f)*tgamma(k + 1.f));
 }
 
-__global__ void segment_property1_kernel(float* d_intdegs, float* d_extdegs, float* d_cc, std::int32_t* d_segments, std::uint16_t* d_deglist, std::uint16_t* d_adjlist, std::uint8_t* d_adjmat, size_t N, size_t K, size_t T, size_t mix_time) {
+__global__ void segment_property1_kernel(float* d_intdegs, float* d_extdegs, float* d_cc, std::int32_t* d_segments, std::uint16_t* d_deglist, std::uint16_t* d_adjlist, std::uint8_t* d_adjmat, std::size_t N, std::size_t K, std::size_t T, std::size_t mix_time) {
 int t = blockDim.x * blockIdx.x + threadIdx.x;
 
 if (t >= mix_time && t < T) {
@@ -1033,12 +1033,12 @@ d_cc[Nt + n] = numOfTriangles / (2.f * numOfTriplets);
 }
 }
 
-void segment_properties_thread(SEGMENTS* h_segments, std::uint8_t* segvisited, std::vector<size_t>* segs, float* h_intdegs, float* h_extdegs, float* h_ccs, const size_t N, const float totK, const size_t t) {
-size_t s, l, Nt(N*t);
+void segment_properties_thread(SEGMENTS* h_segments, std::uint8_t* segvisited, std::vector<std::size_t>* segs, float* h_intdegs, float* h_extdegs, float* h_ccs, const std::size_t N, const float totK, const std::size_t t) {
+std::size_t s, l, Nt(N*t);
 
 //Sum the internal degrees, the external degrees and the
 //internal clustering coefficients for each segment.
-for (size_t n = 0; n < N; n++) {
+for (std::size_t n = 0; n < N; n++) {
 s = h_segments->partitions[N*t + n];
 l = t - h_segments->birthdeath[2 * s];
 
@@ -1053,7 +1053,7 @@ h_segments->cc_means[s][l] += h_ccs[Nt + n];
 }
 
 //Compute the modularities and mean internal clustering coefficients of the segments.
-for (size_t i = 0; i < segs->size(); i++) {
+for (std::size_t i = 0; i < segs->size(); i++) {
 s = (*segs)[i];
 l = t - h_segments->birthdeath[2 * s];
 
@@ -1064,14 +1064,14 @@ h_segments->cc_means[s][l] /= (float) h_segments->pop[s][l];
 }
 
 //Compute the internal clustering coefficient variance.
-for (size_t n = 0; n < N; n++) {
+for (std::size_t n = 0; n < N; n++) {
 s = h_segments->partitions[N*t + n];
 l = t - h_segments->birthdeath[2 * s];
 
 h_segments->cc_vars[s][l] += std::pow(h_ccs[Nt + n] - h_segments->cc_means[s][l], 2.);
 }
 
-for (size_t i = 0; i < segs->size(); i++) {
+for (std::size_t i = 0; i < segs->size(); i++) {
 s = (*segs)[i];
 l = t - h_segments->birthdeath[2 * s];
 
@@ -1079,7 +1079,7 @@ h_segments->cc_vars[s][l] /= (float) h_segments->pop[s][l];
 }
 }
 
-void compute_segment_properties(SEGMENTS &h_segments, GRAPH &h_graph, const size_t mix_time, const size_t relax_time, const size_t T) {
+void compute_segment_properties(SEGMENTS &h_segments, Graph &h_graph, const std::size_t mix_time, const std::size_t relax_time, const std::size_t T) {
 //Compute the modularity and the internal clustering coefficients for each segment.
 
 On Device:
@@ -1094,9 +1094,9 @@ On Host:
 
 3 and 4 can be done at the same time.
 
-const size_t N = h_segments.N;
-const size_t T = h_segments.T;
-const size_t K = h_graph.max_deg;
+const std::size_t N = h_segments.N;
+const std::size_t T = h_segments.T;
+const std::size_t K = h_graph.max_deg;
 
 std::int32_t* d_partitions;
 float* d_intdegs,* d_extdegs,* d_nodeccs;
@@ -1120,8 +1120,8 @@ cudaMalloc((void**)&d_extdegs, sizeof(float)*N*T);
 cudaMalloc((void**)&d_nodeccs, sizeof(float)*N*T);
 
 //Run the kernel.
-size_t blocksize = 256;
-size_t blocknum = (T / blocksize) + 1;
+std::size_t blocksize = 256;
+std::size_t blocknum = (T / blocksize) + 1;
 segment_property1_kernel<<<blocknum, blocksize>>>(d_intdegs, d_extdegs, d_nodeccs, d_partitions, d_deglist, d_adjlist, d_adjmat, N, K, T, mix_time);
 
 //Copy the results to the host.
@@ -1134,7 +1134,7 @@ cudaMemcpy(h_extdegs, d_extdegs, sizeof(float)*N*T, cudaMemcpyDeviceToHost);
 cudaMemcpy(h_nodeccs, d_nodeccs, sizeof(float)*N*T, cudaMemcpyDeviceToHost);
 
 //Create the arrays needed for the threads.
-const size_t numOfThreads = 7;
+const std::size_t numOfThreads = 7;
 std::thread threads[numOfThreads];
 
 std::uint8_t* segvisited = new std::uint8_t[numOfThreads*h_segments.S];
@@ -1142,16 +1142,16 @@ std::vector<std::uint16_t> segs[numOfThreads];
 
 //calculate the total degree of the graph.
 double totK = 0;
-for (size_t i = 0; i < N; i++) {
+for (std::size_t i = 0; i < N; i++) {
 totK += h_graph.deglist[i];
 }
 
-for (size_t t = mix_time; t < T; t += numOfThreads) {
-for (size_t thr = 0; thr < numOfThreads; thr++) {
+for (std::size_t t = mix_time; t < T; t += numOfThreads) {
+for (std::size_t thr = 0; thr < numOfThreads; thr++) {
 threads[thr] = std::thread(h_segments, segvisited + thr*h_segments.S, segs[thr], h_intdegs, h_extdegs, h_nodeccs, N, totK, t);
 }
 
-for (size_t thr = 0; thr < numOfThreads; thr++) {
+for (std::size_t thr = 0; thr < numOfThreads; thr++) {
 threads[thr].join();
 }
 }
@@ -1171,7 +1171,7 @@ cudaFree(d_adjmat);
 }
 */
 
-__global__ void partition_countmat_kernel( float* d_comsims, float* d_countmat, float* d_commat, float* d_commag, std::int32_t* d_partitions, size_t N, size_t t, size_t window ) {
+__global__ void partition_countmat_kernel( float* d_comsims, float* d_countmat, float* d_commat, float* d_commag, std::int32_t* d_partitions, std::size_t N, std::size_t t, std::size_t window ) {
 	int n = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if ( n < N ) {
@@ -1212,13 +1212,13 @@ __global__ void partition_countmat_kernel( float* d_comsims, float* d_countmat, 
 	}
 }
 
-__global__ void community_consensus_kernel( std::int16_t* d_consensus, std::int8_t* d_spins, std::uint16_t* d_comms, size_t N, size_t C, size_t T, size_t mix_time ) {
+__global__ void community_consensus_kernel( std::int16_t* d_consensus, std::int8_t* d_spins, std::uint16_t* d_comms, std::size_t N, std::size_t C, std::size_t T, std::size_t mix_time ) {
 	int t = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if ( t >= mix_time && t < T ) {
 		int com;
 		int Nt = N*t;
-		for ( size_t n = 0; n < N; n++ ) {
+		for ( std::size_t n = 0; n < N; n++ ) {
 			com = d_comms[ n ];
 			d_consensus[ com*T + t ] += d_spins[ Nt + n ];
 		}
@@ -1226,7 +1226,7 @@ __global__ void community_consensus_kernel( std::int16_t* d_consensus, std::int8
 }
 
 
-void compute_community_properties( COMMUNITY_DATA &comm, SEGMENTS &h_segments, std::int8_t* d_spins, const size_t N, const size_t T, const size_t mix_time ) {
+void compute_community_properties( COMMUNITY_DATA &comm, SEGMENTS &h_segments, std::int8_t* d_spins, const std::size_t N, const std::size_t T, const std::size_t mix_time ) {
 	if ( comm.loaded ) {
 		std::int16_t* d_consensus;
 		cudaMalloc( (void**) &d_consensus, sizeof( std::int16_t )*comm.C*T );
@@ -1236,8 +1236,8 @@ void compute_community_properties( COMMUNITY_DATA &comm, SEGMENTS &h_segments, s
 		cudaMalloc( (void**) &d_comms, sizeof( std::uint16_t )*N );
 		cudaMemcpy( d_comms, comm.memberships, sizeof( std::uint16_t )*N, cudaMemcpyHostToDevice );
 
-		size_t blocksize = 128;
-		size_t blocknum = ( T / blocksize ) + 1;
+		std::size_t blocksize = 128;
+		std::size_t blocknum = ( T / blocksize ) + 1;
 
 		community_consensus_kernel << <blocknum, blocksize >> >( d_consensus, d_spins, d_comms, N, comm.C, T, mix_time );
 
@@ -1249,7 +1249,7 @@ void compute_community_properties( COMMUNITY_DATA &comm, SEGMENTS &h_segments, s
 }
 
 
-__global__ void compute_membership_kernel( std::int16_t* d_memberships, std::uint16_t* d_memberships_count, std::uint16_t* d_qmat, std::int8_t* d_spins, std::uint16_t* d_deglist, std::uint16_t* d_adjlist, size_t N, size_t K, size_t T, size_t analysis_time ) {
+__global__ void compute_membership_kernel( std::int16_t* d_memberships, std::uint16_t* d_memberships_count, std::uint16_t* d_qmat, std::int8_t* d_spins, std::uint16_t* d_deglist, std::uint16_t* d_adjlist, std::size_t N, std::size_t K, std::size_t T, std::size_t analysis_time ) {
 	int t = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if ( t >= analysis_time && t < T ) {
@@ -1295,7 +1295,7 @@ __global__ void compute_membership_kernel( std::int16_t* d_memberships, std::uin
 	}
 }
 
-void compute_membership_device( std::int16_t* d_memberships, std::uint16_t* d_memberships_count, std::int8_t* d_spins, std::uint16_t* d_deglist, std::uint16_t* d_adjlist, const size_t N, const size_t K, const size_t T, const size_t analysis_time ) {
+void compute_membership_device( std::int16_t* d_memberships, std::uint16_t* d_memberships_count, std::int8_t* d_spins, std::uint16_t* d_deglist, std::uint16_t* d_adjlist, const std::size_t N, const std::size_t K, const std::size_t T, const std::size_t analysis_time ) {
 	std::uint16_t* d_qmat;
 	cudaMalloc( (void**) &d_qmat, sizeof( std::uint16_t )*N*T );
 
@@ -1304,8 +1304,8 @@ void compute_membership_device( std::int16_t* d_memberships, std::uint16_t* d_me
 
 	cudaDeviceSynchronize();
 
-	const size_t blocksize = 128;
-	const size_t blocknum = ( T / blocksize ) + 1;
+	const std::size_t blocksize = 128;
+	const std::size_t blocknum = ( T / blocksize ) + 1;
 
 	printf( "\tStarting Membership Kernel: %d, %d\n", analysis_time, T );
 	compute_membership_kernel << <blocknum, blocksize >> >( d_memberships, d_memberships_count, d_qmat, d_spins, d_deglist, d_adjlist, N, K, T, analysis_time );
@@ -1314,11 +1314,11 @@ void compute_membership_device( std::int16_t* d_memberships, std::uint16_t* d_me
 	cudaFree( d_qmat );
 }
 
-void edgecounter_thread( SEGMENTS* h_segments, GRAPH* h_graph, const size_t t_offset, const size_t numOfThreads ) {
+void edgecounter_thread( SEGMENTS* h_segments, Graph* h_graph, const std::size_t t_offset, const std::size_t numOfThreads ) {
 	//The time steps are split amoung several threads. 
 	//Each thread will continue until it has counted the edges for all of its assigned time steps.
-	for ( size_t t = t_offset; t < (* h_segments ).T; t += numOfThreads ) {
-		for ( size_t n = 0; n < (* h_graph ).NoV; n++ ) {
+	for ( std::size_t t = t_offset; t < (* h_segments ).T; t += numOfThreads ) {
+		for ( std::size_t n = 0; n < (* h_graph ).NoV; n++ ) {
 
 			//Get the crowd of vertex n during time step t.
 			std::int32_t s = (* h_segments ).partitions[ (* h_segments ).N * t + n ];
@@ -1329,9 +1329,9 @@ void edgecounter_thread( SEGMENTS* h_segments, GRAPH* h_graph, const size_t t_of
 			(* h_segments ).extdegs[ s ][ rt ] += (* h_graph ).deglist[ n ];
 
 			//Check the neighbours of vertex n to see if they are in crowd s or not.
-			for ( size_t k = 0; k < (* h_graph ).deglist[ n ]; k++ ) {
+			for ( std::size_t k = 0; k < (* h_graph ).deglist[ n ]; k++ ) {
 				//Get the neighbour vertex id.
-				size_t m = (* h_graph ).adjlist[ n*(* h_graph ).max_deg + k ];
+				std::size_t m = (* h_graph ).adjlist[ n*(* h_graph ).max_deg + k ];
 				//Get the crowd of vertex m.
 				std::uint32_t sm = (* h_segments ).partitions[ (* h_segments ).N * t + m ];
 
@@ -1345,16 +1345,16 @@ void edgecounter_thread( SEGMENTS* h_segments, GRAPH* h_graph, const size_t t_of
 	}
 }
 
-void modularity_thread( SEGMENTS* h_segments, const double numOfDegrees, const size_t s_offset, const size_t numOfThreads ) {
-	for ( size_t s = s_offset; s < (* h_segments ).S; s += numOfThreads ) {
-		for ( size_t l = 0; l < (* h_segments ).lifetimes[ s ]; l++ ) {
+void modularity_thread( SEGMENTS* h_segments, const double numOfDegrees, const std::size_t s_offset, const std::size_t numOfThreads ) {
+	for ( std::size_t s = s_offset; s < (* h_segments ).S; s += numOfThreads ) {
+		for ( std::size_t l = 0; l < (* h_segments ).lifetimes[ s ]; l++ ) {
 			double ai = (double) (* h_segments ).extdegs[ s ][ l ] / (double) numOfDegrees / 2.;
 			(* h_segments ).mods[ s ][ l ] = (float) ( (double) (* h_segments ).intdegs[ s ][ l ] / (double) numOfDegrees / 2. - ai*ai );
 		}
 	}
 }
 
-void compute_modularities( SEGMENTS &h_segments, GRAPH &h_graph, const size_t mixing_time ) {
+void compute_modularities( SEGMENTS &h_segments, Graph &h_graph, const std::size_t mixing_time ) {
 	/*
 		- Count number of internal and external degrees for each crowd during each time step.
 		- intedges - extedges^2 is the modularity of the crowd.
@@ -1368,34 +1368,34 @@ void compute_modularities( SEGMENTS &h_segments, GRAPH &h_graph, const size_t mi
 		*/
 
 	//Count the number of internal edges and the total number of edges in each crowd during each time step of its life.
-	const size_t numOfThreads = 7;
+	const std::size_t numOfThreads = 7;
 
 	std::thread edgecounter_thrds[ numOfThreads ];
-	for ( size_t thrd = 0; thrd < numOfThreads; thrd++ ) {
+	for ( std::size_t thrd = 0; thrd < numOfThreads; thrd++ ) {
 		edgecounter_thrds[ thrd ] = std::thread( edgecounter_thread, &h_segments, &h_graph, mixing_time + thrd, numOfThreads );
 	}
 
-	for ( size_t thrd = 0; thrd < numOfThreads; thrd++ ) {
+	for ( std::size_t thrd = 0; thrd < numOfThreads; thrd++ ) {
 		edgecounter_thrds[ thrd ].join();
 	}
 
 	//Count the total number of degrees in the graph.
 	double totaldeg = 0;
-	for ( size_t i = 0; i < h_graph.NoV; i++ ) {
+	for ( std::size_t i = 0; i < h_graph.NoV; i++ ) {
 		totaldeg += h_graph.deglist[ i ];
 	}
 
 	std::thread mod_thrds[ numOfThreads ];
-	for ( size_t thrd = 0; thrd < numOfThreads; thrd++ ) {
+	for ( std::size_t thrd = 0; thrd < numOfThreads; thrd++ ) {
 		mod_thrds[ thrd ] = std::thread( modularity_thread, &h_segments, totaldeg, thrd, numOfThreads );
 	}
 
-	for ( size_t thrd = 0; thrd < numOfThreads; thrd++ ) {
+	for ( std::size_t thrd = 0; thrd < numOfThreads; thrd++ ) {
 		mod_thrds[ thrd ].join();
 	}
 }
 
-__global__ void community_associationinit_kernel( float* d_comm_association, float* d_comm_assmag_sq, std::uint16_t* d_communities, const size_t N ) {
+__global__ void community_associationinit_kernel( float* d_comm_association, float* d_comm_assmag_sq, std::uint16_t* d_communities, const std::size_t N ) {
 	int n = blockDim.x * blockIdx.x + threadIdx.x;
 	if ( n < N ) {
 		d_comm_assmag_sq[ n ] = 0;
@@ -1413,7 +1413,7 @@ __global__ void community_associationinit_kernel( float* d_comm_association, flo
 	}
 }
 
-__global__ void crowd_associationinit_kernel( float* d_crowd_association, float* d_crowd_assmag_sq, std::int32_t* d_partition, const size_t N, const size_t mixing_time, const size_t W ) {
+__global__ void crowd_associationinit_kernel( float* d_crowd_association, float* d_crowd_assmag_sq, std::int32_t* d_partition, const std::size_t N, const std::size_t mixing_time, const std::size_t W ) {
 	int n = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if ( n < N ) {
@@ -1441,7 +1441,7 @@ __global__ void crowd_associationinit_kernel( float* d_crowd_association, float*
 	}
 }
 
-__global__ void crowd_association_kernel( float* d_crowd_association, float* d_crowd_assmag_sq, std::int32_t* d_partition, const size_t t, const size_t N, const int addsub ) {
+__global__ void crowd_association_kernel( float* d_crowd_association, float* d_crowd_assmag_sq, std::int32_t* d_partition, const std::size_t t, const std::size_t N, const int addsub ) {
 	int n = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if ( n < N ) {
@@ -1460,7 +1460,7 @@ __global__ void crowd_association_kernel( float* d_crowd_association, float* d_c
 	}
 }
 
-__global__ void comm_simmeasure_kernel( float* d_comm_cossim, float* d_comm_eucdis, float* d_comm_association, float* d_comm_assmag_sq, float* d_crowd_association, float* d_crowd_assmag_sq, const size_t N, const size_t t, const size_t W ) {
+__global__ void comm_simmeasure_kernel( float* d_comm_cossim, float* d_comm_eucdis, float* d_comm_association, float* d_comm_assmag_sq, float* d_crowd_association, float* d_crowd_assmag_sq, const std::size_t N, const std::size_t t, const std::size_t W ) {
 	int n = blockDim.x * blockIdx.x + threadIdx.x;
 	if ( n < N ) {
 
@@ -1486,11 +1486,11 @@ __global__ void comm_simmeasure_kernel( float* d_comm_cossim, float* d_comm_eucd
 }
 
 
-void compute_association( SEGMENTS &h_segments, const size_t analysis_time, const size_t W ) {
+void compute_association( SEGMENTS &h_segments, const std::size_t analysis_time, const std::size_t W ) {
 	std::printf( "Computing Community Associations\n" );
 
-	const size_t N = h_segments.N;
-	const size_t T = h_segments.T;
+	const std::size_t N = h_segments.N;
+	const std::size_t T = h_segments.T;
 
 	//Initialise memory on device.
 	//Will store the cosine similarities and euclidian distances for each vertex at each time step.
@@ -1523,7 +1523,7 @@ void compute_association( SEGMENTS &h_segments, const size_t analysis_time, cons
 
 	/*------------------------------------------------------------------------------------------------------*/
 
-	const size_t threadNum = 64;
+	const std::size_t threadNum = 64;
 
 	//Initialise the community association values;
 	community_associationinit_kernel << <( N / threadNum ) + 1, threadNum >> >( d_comm_association, d_comm_assmag_sq, d_communities, N );
@@ -1551,7 +1551,7 @@ void compute_association( SEGMENTS &h_segments, const size_t analysis_time, cons
 	crowd_association_kernel << <( N / threadNum ) + 1, threadNum >> >( d_crowd_association, d_crowd_assmag_sq, d_partition, analysis_time, N, -1 );
 
 	//Compute the similarities and distances for all other time steps in the interval (W,T-W).
-	for ( size_t t = analysis_time + W + 1; t < T - W; t++ ) {
+	for ( std::size_t t = analysis_time + W + 1; t < T - W; t++ ) {
 		//Add the contribution from time step t+W.
 		crowd_association_kernel << <( N / threadNum ) + 1, threadNum >> >( d_crowd_association, d_crowd_assmag_sq, d_partition, t + W, N, 1 );
 
@@ -1637,12 +1637,12 @@ void save_magnetisation( const std::string dir, MAGNETISATION &mag ) {
 }
 
 void save_crowdSizeDists( const std::string dir, const std::uint32_t interval, jaggedlist<std::uint16_t> &h_crowdsizes ) {
-	size_t Ts = h_crowdsizes.size();
+	std::size_t Ts = h_crowdsizes.size();
 	std::uint32_t t;
 	std::string tmpdir = dir + "/crowd_sizes";
 	dirCreate( tmpdir );
 
-	for ( size_t i = 0; i < Ts; i++ ) {
+	for ( std::size_t i = 0; i < Ts; i++ ) {
 		t = i * interval;
 
 		std::string fpath = tmpdir + "/t_" + zeroPadNum( std::to_string( t ), 6 ) + ".dat";
@@ -1720,11 +1720,11 @@ void save_pathlengths( const std::string dir, SEGMENTS &h_segments ) {
 	fpath.push_back( dir + "/segment_modularities.dat" );
 
 
-	const size_t numOfFiles = 8;
+	const std::size_t numOfFiles = 8;
 
 	FILE* files[ numOfFiles ];
 
-	for ( size_t f = 0; f < numOfFiles; f++ ) {
+	for ( std::size_t f = 0; f < numOfFiles; f++ ) {
 		std::uint32_t S = 0;
 		std::uint32_t R = 0;
 		if ( FileExists( fpath[ f ] ) ) {
@@ -1750,15 +1750,15 @@ void save_pathlengths( const std::string dir, SEGMENTS &h_segments ) {
 
 	std::uint32_t S = h_segments.S;
 
-	for ( size_t f = 0; f < numOfFiles; f++ ) {
+	for ( std::size_t f = 0; f < numOfFiles; f++ ) {
 		files[ f ] = std::fopen( fpath[ f ].c_str(), "ab" );
 	}
 
 	printf( "Number of Segments = %d\n", h_segments.S );
 	std::uint16_t L;
-	for ( size_t s = 0; s < S; s++ ) {
+	for ( std::size_t s = 0; s < S; s++ ) {
 		L = h_segments.lifetimes[ s ];
-		for ( size_t i = 0; i < numOfFiles; i++ ) {
+		for ( std::size_t i = 0; i < numOfFiles; i++ ) {
 			fwrite( &L, sizeof( std::uint16_t ), 1, files[ i ] );
 		}
 
@@ -1772,7 +1772,7 @@ void save_pathlengths( const std::string dir, SEGMENTS &h_segments ) {
 		fwrite( &( h_segments.mods[ s ][ 0 ] ), sizeof( float ), L, files[ 7 ] );
 	}
 
-	for ( size_t f = 0; f < numOfFiles; f++ ) {
+	for ( std::size_t f = 0; f < numOfFiles; f++ ) {
 		fclose( files[ f ] );
 	}
 
@@ -1820,11 +1820,11 @@ void save_pathlengths_v2( const std::string dir, SEGMENTS &h_segments ) {
 	fpath.push_back( dir + "/segment_dist.v2.dat" );
 	fpath.push_back( dir + "/segment_modularities.v2.dat" );
 
-	const size_t numOfFiles = 8;
+	const std::size_t numOfFiles = 8;
 
 	FILE* files[ numOfFiles ];
 
-	for ( size_t f = 0; f < numOfFiles; f++ ) {
+	for ( std::size_t f = 0; f < numOfFiles; f++ ) {
 		std::uint32_t R = 0;
 		if ( FileExists( fpath[ f ] ) ) {
 			FILE* file = std::fopen( fpath[ f ].c_str(), "rb+" );
@@ -1845,16 +1845,16 @@ void save_pathlengths_v2( const std::string dir, SEGMENTS &h_segments ) {
 
 	std::uint32_t S = h_segments.S;
 
-	for ( size_t f = 0; f < numOfFiles; f++ ) {
+	for ( std::size_t f = 0; f < numOfFiles; f++ ) {
 		files[ f ] = std::fopen( fpath[ f ].c_str(), "ab" );
 		fwrite( &S, sizeof( std::uint32_t ), 1, files[ f ] );
 	}
 
 	printf( "Number of Segments = %d\n", h_segments.S );
 	std::uint16_t L;
-	for ( size_t s = 0; s < S; s++ ) {
+	for ( std::size_t s = 0; s < S; s++ ) {
 		L = h_segments.lifetimes[ s ];
-		for ( size_t i = 0; i < numOfFiles; i++ ) {
+		for ( std::size_t i = 0; i < numOfFiles; i++ ) {
 			fwrite( &L, sizeof( std::uint16_t ), 1, files[ i ] );
 		}
 
@@ -1868,7 +1868,7 @@ void save_pathlengths_v2( const std::string dir, SEGMENTS &h_segments ) {
 		fwrite( &( h_segments.mods[ s ][ 0 ] ), sizeof( float ), L, files[ 7 ] );
 	}
 
-	for ( size_t f = 0; f < numOfFiles; f++ ) {
+	for ( std::size_t f = 0; f < numOfFiles; f++ ) {
 		fclose( files[ f ] );
 	}
 
@@ -1898,10 +1898,10 @@ void save_pathlengths_v2( const std::string dir, SEGMENTS &h_segments ) {
 	printf( "\t\tSave Complete\n" );
 }
 
-void save_community_associations( const std::string dname, std::string fname, const size_t mixing_time, const size_t W, SEGMENTS &h_segments ) {
+void save_community_associations( const std::string dname, std::string fname, const std::size_t mixing_time, const std::size_t W, SEGMENTS &h_segments ) {
 	dirCreate( dname );
 
-	const size_t WSz = 2 * W + 1;
+	const std::size_t WSz = 2 * W + 1;
 	std::string fpath = dname + "/" + fname + "_W" + zeroPadNum( std::to_string( WSz ), 3 ) + ".dat";
 
 	std::uint32_t R = 0;

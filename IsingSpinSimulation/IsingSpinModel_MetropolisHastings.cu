@@ -11,7 +11,7 @@ double IsingSpinModel_MetropolisHastings::calcAcceptanceProb( const std::int32_t
 	std::int32_t neighbour = -1;
 	double H1( 0 ), H2( 0 );
 
-	for ( size_t k = 0; k < _graph.degree( node ); ++k )
+	for ( std::size_t k = 0; k < _graph.degree( node ); ++k )
 	{
 		neighbour = _graph.neighbour( node, k );
 		if ( _spin_states.get( time_step, node ) == _spin_states.get( time_step, neighbour ) )

@@ -10,14 +10,23 @@
     <Filter Include="Headers\Data_Structures\Graph">
       <UniqueIdentifier>{c053b114-c193-4dec-8809-f519c769d2e9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Headers\Data_Structures\Array_Structures">
-      <UniqueIdentifier>{af501bec-d2a5-4ebe-906b-0d99c425dde0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Headers\File_IO">
       <UniqueIdentifier>{7fd9a565-5beb-48f3-bbb3-9ae19e0b3098}</UniqueIdentifier>
     </Filter>
     <Filter Include="Headers\Physical_Model">
       <UniqueIdentifier>{74255d48-6d22-4b55-8599-b13ca412dfe7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers\Analysis">
+      <UniqueIdentifier>{6ef687f6-f6f5-4173-9581-3a54bb339ef7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers\Data_Structures\Matrices">
+      <UniqueIdentifier>{0e04eef9-b3a1-4d97-b0b9-f80f7da830dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers\Data_Structures\Jagged_Lists">
+      <UniqueIdentifier>{4ded8035-f50e-40fe-aae9-ed8f67c55c22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers\Data_Structures\Arrays">
+      <UniqueIdentifier>{af501bec-d2a5-4ebe-906b-0d99c425dde0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -49,23 +58,29 @@
       <Filter>Headers\File_IO</Filter>
     </ClInclude>
     <ClInclude Include="ArrayHandle.h">
-      <Filter>Headers\Data_Structures\Array_Structures</Filter>
+      <Filter>Headers\Data_Structures\Arrays</Filter>
+    </ClInclude>
+    <ClInclude Include="CrowdIdentification.h">
+      <Filter>Headers\Analysis</Filter>
+    </ClInclude>
+    <ClInclude Include="Matrix.h">
+      <Filter>Headers\Data_Structures\Matrices</Filter>
+    </ClInclude>
+    <ClInclude Include="MatrixShared.h">
+      <Filter>Headers\Data_Structures\Matrices</Filter>
+    </ClInclude>
+    <ClInclude Include="JaggedList.h">
+      <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="JaggedListShared.h">
+      <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphShared.h">
+      <Filter>Headers\Data_Structures\Graph</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Source.cu" />
-    <CudaCompile Include="JaggedList.cu">
-      <Filter>Headers\Data_Structures\Array_Structures</Filter>
-    </CudaCompile>
-    <CudaCompile Include="JaggedListShared.cu">
-      <Filter>Headers\Data_Structures\Array_Structures</Filter>
-    </CudaCompile>
-    <CudaCompile Include="Matrix.cu">
-      <Filter>Headers\Data_Structures\Array_Structures</Filter>
-    </CudaCompile>
-    <CudaCompile Include="MatrixShared.cu">
-      <Filter>Headers\Data_Structures\Array_Structures</Filter>
-    </CudaCompile>
     <CudaCompile Include="Graph.cu">
       <Filter>Headers\Data_Structures\Graph</Filter>
     </CudaCompile>
@@ -86,6 +101,18 @@
     </CudaCompile>
     <CudaCompile Include="IsingSpinModel_parallel.cu">
       <Filter>Headers\Physical_Model</Filter>
+    </CudaCompile>
+    <CudaCompile Include="MatrixShared.cu">
+      <Filter>Headers\Data_Structures\Matrices</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Matrix.cu">
+      <Filter>Headers\Data_Structures\Matrices</Filter>
+    </CudaCompile>
+    <CudaCompile Include="JaggedList.cu">
+      <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
+    </CudaCompile>
+    <CudaCompile Include="JaggedListShared.cu">
+      <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

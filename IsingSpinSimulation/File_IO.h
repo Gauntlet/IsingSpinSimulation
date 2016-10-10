@@ -3,12 +3,12 @@
 
 #include <fstream>
 #include <iostream>
+#include "zlib.h"
 #include "KDetails.h"
 
 namespace kspace
 {
 	namespace FILEIO {
-#include "zlib.h"
 
 		/*///////////////////////////////////////////////////////
 		FileHandle was taken from stackoverflow answer about RAII

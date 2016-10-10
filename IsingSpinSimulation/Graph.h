@@ -21,7 +21,7 @@
 |		0		| FILE ID					|		8		|	char		| mKGRAPHm/eKGRAPHe	|
 |		8		| Major Version				|		1		|	uint8_t		|		  1			|
 |		9		| Minor Version				|		1		|	uint8_t		|		  1			|
-|		10		| Parameter Offset			|		2		|	uint16_t	|		  50		|
+|		10		| Parameter Offset			|		2		|	uint16_t	|		  44		|
 |		12		| Number of Parameters		|		1		|	uint8_t		|		  P			|
 |		13		| P. Uncompressed Size (B)	|		4		|	uint32_t	|		 PUS		|
 |		17		| P. Cmprssd Sz				|		4		|	uint32_t	|		 PCS		|
@@ -30,16 +30,15 @@
 |		27		| D. Bitpacked Size (B)		|		4		|	uint32_t	|		  B			|
 |		31		| D. Compressed Size (B)	|		4		|	uint32_t	|		  C			|
 |		35		| Number of Nodes in Graph	|		4		|	int32_t		|		  N			|
-|		39		| Number of Nodes in File	|		4		|	int32_t		|		  M			|
-|		43		| Number of Neighbours		|		4		|	uint32_t	|		  Z			|
-|		47		| Graph ID					|		1		|	uint8_t		|		  G			|
+|		39		| Number of Edges in Graph	|		4		|	uint32_t	|		  K			|
+|		43		| Graph ID					|		1		|	uint8_t		|		  G			|
 |-----------------------------------------------------------------------------------------------|
 |-----------------------------------------------------------------------------------------------|
 |-----------------------------------------------------------------------------------------------|
 |		  The rest of the header depends on the number of parameters and the sizes of			|
 |							   the array of names and values.									|
 |-----------------------------------------------------------------------------------------------|
-|		50		|  P. Names					|		PNS		|	char[]		|					|
+|		44		|  P. Names					|		PNS		|	char[]		|					|
 |				|  P. Types					|		PTS		|	uint8_t[]	|					|
 |				|  P. Sizes					|				|	uint8_t[]	|					|
 |				|  P. Values				|		PVS		|	variable[]	|					|
@@ -52,16 +51,6 @@
 |-----------------------------------------------------------------------------------------------|
 |       DO		|  Matrix					|		C		|	 Byte[C]	|	   uint8_t		|
 |-----------------------------------------------------------------------------------------------|
-|										  Edge List Data Format									|
-|-----------------------------------------------------------------------------------------------|
-|	  OFFSET	|		DATA FIELD			|	SIZE (B)	|	  TYPE		|		VALUE		|
-|-----------------------------------------------------------------------------------------------|
-|       DO		|  Degrees					|				|				|	   uint32_t		|
-|				|  Vertex IDs				|				|				|	   int32_t		|
-|				|  Neighbour Offsets		|				|				|	   uint32_t		|
-|				|  Neighbour IDs			|				|				|	   int32_t		|
-|-----------------------------------------------------------------------------------------------|
-
 ////////////////////////////////////////////|\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ||||||||||||||||||||||||||||||||||        NOTES        |||||||||||||||||||||||||||||||||||||||
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\|////////////////////////////////////////////////
@@ -80,86 +69,90 @@ Neighbour ID 'm' only appears if m >= n.
 
 namespace kspace
 {
-	namespace GRAPH
-	{
 
 #define _MAJOR_VERSION_ 1
 #define _MINOR_VERSION_ 0
-		enum class ID : std::uint16_t
-		{
-			NONE, LINEAR_LATTICE, RECTANGULAR_LATTICE, CIRCULAR_LATTICE, ERDOS_RENYI, WATTS_STROGATZ, BARABASI_ALBERT
-		};
 
-
+	namespace GRAPH
+	{
 		class Parameters;
 
-		
 		class Graph
 		{
 			friend class GraphShared;
-		private:
-			MemoryLocation memloc;
-
-			std::int32_t* number_of_nodes;
-
-			std::uint8_t*	adjmat;
-			std::int32_t*	adjlist;
-			std::int32_t*	degrees;
-			std::uint32_t*	offsets;
-
-			class GET : public GET_SUPER < Graph >
+		protected:
+			class Data
 			{
 			public:
-				GET( const Graph &parent ) : GET_SUPER::GET_SUPER( parent ) {};
-				int32_t number_of_nodes() const;
-				int32_t degree( const uint32_t v ) const;
-
-				bool is_connected( const uint32_t v, const uint32_t w ) const;
-				int32_t neighbour( const uint32_t v, const uint32_t kth_neighbour ) const;
-
-				MemoryLocation memory_location() const;
-			};
-		protected:
-			struct Data {
-				std::int32_t* num_of_nodes;
+				MemoryLocation memloc;
+				std::int32_t* number_of_nodes;
 				std::uint8_t* adjmat;
 				std::int32_t* adjlist;
 				std::int32_t* degrees;
 				std::uint32_t* offsets;
+
+				Data() : number_of_nodes( nullptr ), adjmat( nullptr ), adjlist( nullptr ), degrees( nullptr ), offsets( nullptr ), memloc(MemoryLocation::host) {};
+
+				~Data();
+
+				Data( const Data& ) = delete;
+				Data& operator=( const Data& ) = delete;
+
+				Data( Data&& that );
+				Data& operator=( Data&& that );
+
+				void clear();
 			};
 
-			Data readData( const FILEIO::FileHandle &file );
+			Graph::Data readData( const FILEIO::FileHandle &file );
+
+			class GET
+			{
+				Graph const & parent;
+			public:
+				GET( const Graph& parent ) : parent( parent ) {};
+
+				int32_t const & number_of_nodes() const;
+				int32_t const & degree( const uint32_t v ) const;
+				std::uint32_t const & offset( const size_t v ) const;
+
+				bool const & is_connected( const uint32_t v, const uint32_t w ) const;
+				int32_t const & neighbour( const uint32_t v, const uint32_t kth_neighbour ) const;
+
+				MemoryLocation const & memory_location() const;
+
+				std::uint8_t const * adjmat() const;
+				std::int32_t const * adjlist() const;
+				std::int32_t const * degrees() const;
+				std::uint32_t const * offsets() const;
+			};
+
+			class SET
+			{
+				Graph& parent;
+			public:
+				SET( Graph& parent ) : parent( parent ) {};
+
+				std::uint8_t* adjmat() const;
+				std::int32_t* adjlist() const;
+				std::int32_t* degrees() const;
+				std::uint32_t* offsets() const;
+			};
+
 		public:
+
+			enum class ID : std::uint8_t
+			{
+				NONE, LINEAR_LATTICE, RECTANGULAR_LATTICE, CIRCULAR_LATTICE, ERDOS_RENYI, WATTS_STROGATZ, BARABASI_ALBERT
+			};
+
 			Graph( const std::string fname, const MemoryLocation memloc );
-			~Graph();
 
 			GET get;
-		};
+			SET set;
 
-		class GraphShared
-		{
-			friend class GraphShared;
 		private:
-			Graph* intermediary;
-
-		public:
-			Graph* host;
-			Graph* device;
-
-
-			GraphShared( const std::string filename );
-			~GraphShared();
-
-			//Remove the default copy constructors
-			GraphShared( const FILEIO::FileHandle& ) = delete;
-			GraphShared& operator=( const GraphShared& ) = delete;
-
-			//Define move constructors
-			GraphShared( GraphShared& other );
-			GraphShared& operator=( GraphShared&& rhs );
-
-			void host2device();
-			void device2host();
+			Data data;
 		};
 	}
 }

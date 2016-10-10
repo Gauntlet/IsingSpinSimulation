@@ -1,110 +1,108 @@
 #ifndef Array_Handle_H
 #define Array_Handle_H
 
-#include <cstdint>
-#include <utility>
-#include "KDetails.h"
 #include <stdexcept>
+#include "DataStructures.h"
 
 namespace kspace
 {
-	class ArrayHandle
+	template<class elem_type>
+	class ArrayHandle : public unique_ptr < elem_type[] >
 	{
 	private:
-		std::uint8_t* data;
-		std::uint64_t size;
+		MemoryLocation memloc;
+		elem_type* data_ptr;
+		size_t* number_of_elements;
 	protected:
-		class GET : public GET_SUPER < ArrayHandle >
+		template <class T>
+		class GET
 		{
+			ArrayHandle<T> const & parent;
 		public:
-			GET( const ArrayHandle& parent ) : GET_SUPER( parent ) {};
+			GET( ArrayHandle<T> const & parent ) : parent(parent) {};
 
-			const std::uint8_t* data(const size_t i) const
+			size_t const & size() { return parent.number_of_elements; }
+			elem_type const & operator()( const size_t i )
 			{
-				return parent.data;
-			}
-
-			std::uint64_t size() const
-			{
-				return parent.size;
-			}
-
-			template <class T>
-			T operator()<T>( const size_t i ) const
-			{
-				if ( i >= size() )
+				if ( size() <= i )
 				{
-					throw std::runtime_error( "index out of bounds" );
+					throw std::out_of_range( "ArrayHandle index is out of bounds" );
 				}
-				return *((T*) (parent.data + i));
+
+				return parent.data_ptr[ i ];
 			}
 
-			template <class T>
-			T& operator[]( const size_t i )
-			{
-				return *((T*) ( parent.data + i ));
-			}
+			elem_type const * data() { return parent.data_ptr; }
 		};
 
-		class SET : public SET_SUPER < ArrayHandle >
+		template<class T>
+		class SET
 		{
+			ArrayHandle<T>& parent;
 		public:
-			SET( ArrayHandle& parent ) : SET_SUPER( parent ) {};
+			SET( ArrayHandle<T> const & parent ) : parent( parent ) {};
 
-			std::uint8_t* data() const
+			elem_type & operator()( const size_t i )
 			{
-				return parent.data;
+				if ( size() <= i )
+				{
+					throw std::out_of_range( "ArrayHandle index is out of bounds" );
+				}
+
+				return parent.data_ptr[ i ];
 			}
 
-			std::uint8_t& operator[]( const size_t i )
-			{
-				return parent.data[ i ];
-			}
+			elem_type* data() { return parent.data_ptr; }
 		};
 	public:
+		GET<elem_type> get;
+		SET<elem_type> set;
 
+		ArrayHandle( const size_t number_of_elements ) : number_of_elements( new size_t( number_of_elements ) ), data_ptr( new elem_type[ number_of_elements ]() ), memloc(MemoryLocation::host), get(*this), set(*this) {};
 
-		//Define move constructors for the file pointer.
-		ArrayHandle( ArrayHandle&& that ) : data( std::move( that.data ) ), size( std::move( that.size ) ), get( *this )
+		ArrayHandle(const size_t number_of_elements, const MemoryLocation memloc) : number_of_elements(new size_t(number_of_elements)), memloc(memloc), get(*this), set(*this)
 		{
-			that.data = nullptr;
-			that.size = 0;
+			if ( MemoryLocation::host == memloc )
+			{
+				data_ptr = new elem_type[ number_of_elements ]();
+			}
+			else if ( MemoryLocation::device == memloc )
+			{
+				HANDLE_ERROR( cudaMalloc( (void**) &data_ptr, sizeof( elem_type )*number_of_elements ) );
+			}
 		};
 
-		GET get;
 
-		//Define move operator
-		ArrayHandle& operator=( ArrayHandle&& that )
+		//Delete copy constructor and assignment operator
+		ArrayHandle( const ArrayHandle<elem_type>& ) = delete;
+		ArrayHandle& operator=( const ArrayHandle<elem_type>& ) = delete;
+
+
+		//Define move constructor and assignment operator
+		ArrayHandle( ArrayHandle<elem_type>&& that ) : number_of_elements( std::move( that.number_of_elements ) ), unique_ptr<elem_type[]>( std::move( ( unique_ptr<elem_type[]>&& ) that ) )
 		{
-			data = that.data;
-			that.data = nullptr;
-			that.size = 0;
-			return *this;
-		}
+			that.number_of_elements = 0;
+		};
 
-
-		//Remove the default copy constructors
-		//ArrayHandle( const ArrayHandle& ) = delete;
-		//ArrayHandle& operator=( const ArrayHandle& ) = delete;
-		ArrayHandle( const ArrayHandle& that ) = delete;
-		ArrayHandle& operator=( const ArrayHandle& that ) = delete;
-
-
-		//Define constructor to generate empty array.
-		ArrayHandle( const std::uint64_t size ) : data( new std::uint8_t[ size ]() ), size( size ), get( *this ) {};
-
-		//Define a constructor to make a normal array into a managed array.
-		explicit ArrayHandle( std::uint8_t*& data, const std::uint64_t size ) : data( data ), size( size ), get( *this ) { data = nullptr; }
-
-		//Destructor
-		~ArrayHandle()
+		ArrayHandle& operator=( ArrayHandle<elem_type>&& that )
 		{
-			if ( nullptr != data )
-			{
-				delete[] data;
-			}
+			number_of_elements = std::move( that.number_of_elements );
+			memloc = std::move( that.memloc );
+
+			that.number_of_elements = nullptr;
+			that.data_ptr = nullptr;
 		}
 	};
+
+	void foo()
+	{
+		ArrayHandle<int> ah( 10 );
+
+		for ( size_t i = 0; i < ah.get.size(); i++ )
+		{
+			ah.set( i ) = ( i + 1 ) * 10;
+		}
+	}
 }
 
 #endif

@@ -1,9 +1,11 @@
 #include "DataStructures.h"
+#include "Matrix.h"
 
 using namespace kspace;
 
 template<class elem_type>
-void Matrix<elem_type>::initialise( const uint32_t num_of_columns, const uint32_t num_of_rows, const MemoryLocation memloc ) {
+void Matrix<elem_type>::initialise( const uint32_t num_of_columns, const uint32_t num_of_rows, const MemoryLocation memloc )
+{
 	_memloc = memloc;
 
 	const uint32_t tmplength = num_of_columns * num_of_rows;
@@ -32,17 +34,41 @@ void Matrix<elem_type>::initialise( const uint32_t num_of_columns, const uint32_
 	}
 }
 
-template<class elem_type> Matrix<elem_type>::Matrix( const uint32_t N, const MemoryLocation memloc )
+template <class elem_type>
+void Matrix<elem_type>::move_data( Matrix<elem_type>&& that )
+{
+	delete[] data;
+	delete length;
+	delete number_of_columns;
+	delete number_of_rows;
+
+	memlock = that.memloc;
+	data = that.data;
+	length = that.length;
+	number_of_columns = that.number_of_columns;
+	number_of_rows = that.number_of_rows;
+
+	that.memloc = NULL;
+	that.data = nullptr;
+	that.length = nullptr;
+	that.number_of_columns = nullptr;
+	that.number_of_rows = nullptr;
+}
+
+template<class elem_type>
+Matrix<elem_type>::Matrix( const uint32_t N, const MemoryLocation memloc ) : get( *this ), set( *this )
 {
 	initialize( N, N, memloc );
 }
 
-template<class elem_type> Matrix<elem_type>::Matrix( const uint32_t num_of_columns, const uint32_t num_of_rows, const MemoryLocation memloc )
+template<class elem_type>
+Matrix<elem_type>::Matrix( const uint32_t num_of_columns, const uint32_t num_of_rows, const MemoryLocation memloc ) : get( *this ), set( *this )
 {
 	initialize( num_of_columns, num_of_rows, memloc );
 }
 
-template<class elem_type> Matrix<elem_type>::~Matrix()
+template<class elem_type>
+Matrix<elem_type>::~Matrix()
 {
 	if ( memory_location() == MemoryLocation::host )
 	{
@@ -58,62 +84,4 @@ template<class elem_type> Matrix<elem_type>::~Matrix()
 		HANDLE_ERROR( cudaFree( _number_of_columns ) );
 		HANDLE_ERROR( cudaFree( _number_of_rows ) );
 	}
-}
-
-template<class elem_type>
-Matrix<elem_type>::MemoryLocation memory_location() const
-{
-	return _memloc;
-}
-
-template<class elem_type>
-elem_type* Matrix<elem_type>::raw_data()
-{
-	return _data;
-}
-
-template<class elem_type>
-elem_type* Matrix<elem_type>::raw_data( const std::uint32_t column )
-{
-	return _data + number_of_rows() * column;
-}
-
-template<class elem_type>
-elem_type Matrix<elem_type>::get( const uint32_t column, const uint32_t row ) const
-{
-	if ( row < 0 || row >= number_of_rows() || column <= 0 || column >= number_of_columns() )
-	{
-		throw std::invalid_argument( "matrix indices out of bounds" )
-	}
-
-	return _data[ column * number_of_rows + row ];
-}
-
-template<class elem_type>
-void Matrix<elem_type>::set( const uint32_t column, const uint32_t row, const elem_type value )
-{
-	if ( row < 0 || row >= number_of_rows() || column <= 0 || column >= number_of_columns() )
-	{
-		throw std::invalid_argument( "matrix indices out of bounds" )
-	}
-
-	_data[ column * number_of_rows + row ] = value;
-}
-
-template<class elem_type>
-uint32_t Matrix<elem_type>::length() const
-{
-	return *_length;
-}
-
-template<class elem_type>
-uint32_t Matrix<elem_type>::number_of_columns() const
-{
-	return *_number_of_columns;
-}
-
-template<class elem_type>
-uint32_t Matrix<elem_type>::number_of_rows() const
-{
-	return *_number_of_rows;
 }
