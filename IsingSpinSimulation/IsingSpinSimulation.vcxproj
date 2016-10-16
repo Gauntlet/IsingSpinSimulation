@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Analysers.cu" />
+    <CudaCompile Include="CrowdIdentification.cu" />
     <CudaCompile Include="Graph.cu" />
     <CudaCompile Include="GraphShared.cu" />
     <CudaCompile Include="IsingSpinModel_parallel.cu" />

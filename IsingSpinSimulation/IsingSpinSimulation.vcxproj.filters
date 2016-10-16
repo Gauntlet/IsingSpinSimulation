@@ -114,6 +114,9 @@
     <CudaCompile Include="JaggedListShared.cu">
       <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
     </CudaCompile>
+    <CudaCompile Include="CrowdIdentification.cu">
+      <Filter>Headers\Analysis</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
