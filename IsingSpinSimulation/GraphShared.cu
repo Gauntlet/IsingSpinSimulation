@@ -2,7 +2,7 @@
 #include <string>
 using namespace kspace::GRAPH;
 
-GraphShared::GraphShared(const std::string filename)
+GraphShared::GraphShared(const std::string filename) : get(*this), set(*this)
 {
 	host_ptr = new Graph( filename, MemoryLocation::host );
 	intermediary_ptr = new Graph( filename, MemoryLocation::device );

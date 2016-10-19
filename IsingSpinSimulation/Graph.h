@@ -1,6 +1,6 @@
 #ifndef GRAPH_H
 #define GRAPH_H
-#include "DataStructures.h"
+#include "details.h"
 #include "File_IO.h"
 #include <cstdint>
 #include <cassert>

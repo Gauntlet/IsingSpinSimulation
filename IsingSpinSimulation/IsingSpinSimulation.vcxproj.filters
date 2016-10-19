@@ -33,9 +33,6 @@
     <ClInclude Include="Graph.h">
       <Filter>Headers\Data_Structures\Graph</Filter>
     </ClInclude>
-    <ClInclude Include="DataStructures.h">
-      <Filter>Headers\Data_Structures</Filter>
-    </ClInclude>
     <ClInclude Include="File_IO.h">
       <Filter>Headers\File_IO</Filter>
     </ClInclude>
@@ -48,17 +45,11 @@
     <ClInclude Include="Parameters.h">
       <Filter>Headers\Data_Structures\Graph</Filter>
     </ClInclude>
-    <ClInclude Include="KDetails.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="Graph_File_Header.h">
       <Filter>Headers\Data_Structures\Graph</Filter>
     </ClInclude>
     <ClInclude Include="Compression.h">
       <Filter>Headers\File_IO</Filter>
-    </ClInclude>
-    <ClInclude Include="ArrayHandle.h">
-      <Filter>Headers\Data_Structures\Arrays</Filter>
     </ClInclude>
     <ClInclude Include="CrowdIdentification.h">
       <Filter>Headers\Analysis</Filter>
@@ -66,17 +57,23 @@
     <ClInclude Include="Matrix.h">
       <Filter>Headers\Data_Structures\Matrices</Filter>
     </ClInclude>
-    <ClInclude Include="MatrixShared.h">
-      <Filter>Headers\Data_Structures\Matrices</Filter>
-    </ClInclude>
     <ClInclude Include="JaggedList.h">
-      <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
-    </ClInclude>
-    <ClInclude Include="JaggedListShared.h">
       <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
     </ClInclude>
     <ClInclude Include="GraphShared.h">
       <Filter>Headers\Data_Structures\Graph</Filter>
+    </ClInclude>
+    <ClInclude Include="details.h">
+      <Filter>Headers\Data_Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="Array.h">
+      <Filter>Headers\Data_Structures\Arrays</Filter>
+    </ClInclude>
+    <ClInclude Include="MatrixManager.h">
+      <Filter>Headers\Data_Structures\Matrices</Filter>
+    </ClInclude>
+    <ClInclude Include="JaggedListManaged.h">
+      <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -102,20 +99,23 @@
     <CudaCompile Include="IsingSpinModel_parallel.cu">
       <Filter>Headers\Physical_Model</Filter>
     </CudaCompile>
-    <CudaCompile Include="MatrixShared.cu">
-      <Filter>Headers\Data_Structures\Matrices</Filter>
-    </CudaCompile>
     <CudaCompile Include="Matrix.cu">
       <Filter>Headers\Data_Structures\Matrices</Filter>
     </CudaCompile>
     <CudaCompile Include="JaggedList.cu">
       <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
     </CudaCompile>
-    <CudaCompile Include="JaggedListShared.cu">
-      <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
-    </CudaCompile>
     <CudaCompile Include="CrowdIdentification.cu">
       <Filter>Headers\Analysis</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Array.cu">
+      <Filter>Headers\Data_Structures\Arrays</Filter>
+    </CudaCompile>
+    <CudaCompile Include="MatrixManager.cu">
+      <Filter>Headers\Data_Structures\Matrices</Filter>
+    </CudaCompile>
+    <CudaCompile Include="JaggedListManaged.cu">
+      <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

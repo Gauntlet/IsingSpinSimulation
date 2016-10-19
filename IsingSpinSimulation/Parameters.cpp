@@ -1,6 +1,8 @@
 #include <sstream>
 #include "Parameters.h"
-using namespace kspace;
+using namespace kspace::GRAPH;
+
+
 
 template <class RT, class T>
 RT preserved_cast( T num )
@@ -191,7 +193,7 @@ T str2num( const std::string strnum )
 	return num;
 }
 
-Parameters::Parameters( const kspace::Graph::ID graph_id, const std::int32_t number_of_nodes, const std::uint32_t number_of_edges ) : get( *this ), set( *this )
+Parameters::Parameters( const Graph::ID graph_id, const std::int32_t number_of_nodes, const std::uint32_t number_of_edges ) : get( *this ), set( *this )
 {
 
 }
@@ -206,7 +208,7 @@ Parameters::Parameters( const std::size_t number_of_parameters, const FileFormat
 	size_t names_size = 0;
 	for ( size_t i = 0; i < number_of_parameters - 3; ++i )
 	{
-		list.at( 3 + i ).value = (char*) params.parameters.get.data() + names_size;
+		list.at( 3 + i ).value = (char*) params.parameters.set.data_ptr() + names_size;
 		names_size += list.at( 3 + i ).value.size() + 1;
 	}
 
@@ -214,20 +216,20 @@ Parameters::Parameters( const std::size_t number_of_parameters, const FileFormat
 	size_t values_offset = 0;
 	for ( size_t i = 0; i < number_of_parameters - 3; ++i )
 	{
-		list.at( 3 + i ).vtype = ( Parameters::NUMTYPE ) params.parameters.get.data()[ names_size + i ];
+		list.at( 3 + i ).vtype = ( Parameters::NUMTYPE ) params.parameters.get.data_ptr()[ names_size + i ];
 
-		list.at( 3 + i ).vsize = params.parameters.get.data()[ names_size + number_of_parameters - 3 + i ];
+		list.at( 3 + i ).vsize = params.parameters.get.data_ptr()[ names_size + number_of_parameters - 3 + i ];
 
-		list.at( 3 + i ).value = num2str( list.at( 3 + i ).vtype, params.parameters.get.data() + names_size + 2 * number_of_parameters - 6 + values_offset );
+		list.at( 3 + i ).value = num2str( list.at( 3 + i ).vtype, params.parameters.get.data_ptr() + names_size + 2 * number_of_parameters - 6 + values_offset );
 		values_offset += list.at( 3 + i ).vsize;
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Parameters::Parameter::Parameter( const std::string name, const std::uint8_t vsize, const std::string value ) : name( name ), vsize( vsize ), value( value )
+Parameters::Parameter::Parameter( const std::string name, const std::uint8_t vsize, const std::string value ) : name( name ), vsize( vsize ), value( value ), vtype( to_numtype( value ) )
 {
-	vtype = to_numtype( value );
+	
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -263,7 +265,7 @@ Parameters::FileFormattedParameters Parameters::GET::as_array() const
 		valuesa_size += it->vsize;
 	}
 
-	ArrayHandle parama( namesa_size + valuesa_size + ( size() - 3 ) * 2 );
+	ArrayHandle<std::uint8_t> parama( namesa_size + valuesa_size + ( ( ( *this ).size() - 3 ) * 2 ));
 
 	const size_t vtypea_offset = namesa_size;
 	const size_t vsizea_offset = vtypea_offset + size() - 3;
@@ -275,10 +277,10 @@ Parameters::FileFormattedParameters Parameters::GET::as_array() const
 	for ( size_t i = 0; i < size(); ++i )
 	{
 		auto p = at( 3 + i );
-		memcpy( parama.set.data() + namesa_index, p.name.c_str(), sizeof( char )*( p.name.size() + 1 ) );
-		memcpy( parama.set.data() + vtypea_offset + i, &p.vtype, sizeof( std::uint8_t ) );
-		memcpy( parama.set.data() + vsizea_offset + i, &p.vsize, sizeof( std::uint8_t ) );
-		memcpy( parama.set.data() + valuesa_offset + valuesa_index, &p.value, p.vsize );
+		memcpy( parama.set.data_ptr() + namesa_index, p.name.c_str(), sizeof( char )*( p.name.size() + 1 ) );
+		memcpy( parama.set.data_ptr() + vtypea_offset + i, &p.vtype, sizeof( std::uint8_t ) );
+		memcpy( parama.set.data_ptr() + vsizea_offset + i, &p.vsize, sizeof( std::uint8_t ) );
+		memcpy( parama.set.data_ptr() + valuesa_offset + valuesa_index, &p.value, p.vsize );
 
 		//Add an extra 1 for the '\0' character to indicate the end of the string.
 		namesa_index += p.name.size() + 1;

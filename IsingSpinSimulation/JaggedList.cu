@@ -1,8 +1,27 @@
-#include "DataStructures.h"
 #include "JaggedList.h"
 #include <numeric>
 
 using namespace kspace;
+
+template <class elem_type>
+void JaggedList<elem_type>::move_data( JaggedList<elem_type>&& that )
+{
+	set.clear();
+
+	data_ptr = std::move( that.data_ptr );
+	lengths_ptr = std::move( that.lengths_ptr );
+	offsets_ptr = std::move( that.offsets_ptr );
+	size = std::move( that.size );
+	size_flat = std::move( that.size_flat );
+	memloc = std::move( that.memloc );
+
+	that.data_ptr = nullptr;
+	that.lengths_ptr = nullptr;
+	that.offsets_ptr = nullptr;
+	that.size = nullptr;
+	that.size_flat = nullptr;
+	that.memloc = MemoryLocation::host;
+}
 
 template <class elem_type>
 JaggedList<elem_type>::JaggedList(const uint32_t N, const uint32_t* lengths, const MemoryLocation memloc) : get(*this), set(*this)
@@ -45,13 +64,117 @@ JaggedList<elem_type>::JaggedList(const uint32_t N, const uint32_t* lengths, con
 template <class elem_type>
 JaggedList<elem_type>::~JaggedList()
 {
+	( *this ).set.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class elem_type>
+MemoryLocation const & JaggedList<elem_type>::JAGGED_LIST_GET::memory_location() const
+{
+	return parent.memloc;
+}
+
+template <class elem_type>
+elem_type const * JaggedList<elem_type>::JAGGED_LIST_GET::data_ptr() const
+{
+	return parent.data_ptr;
+}
+
+template <class elem_type>
+elem_type const * JaggedList<elem_type>::JAGGED_LIST_GET::lengths_ptr() const
+{
+	return parent.lengths_ptr;
+}
+
+template <class elem_type>
+uint32_t const * JaggedList<elem_type>::JAGGED_LIST_GET::offsets_ptr() const
+{
+	return parent.offsets_ptr;
+}
+
+template <class elem_type>
+elem_type const & JaggedList<elem_type>::JAGGED_LIST_GET::operator()( const uint32_t list_id, const uint32_t index ) const
+{
+	if ( list_id >= size() || index >= length( list_id ) )
+	{
+		throw std::out_of_range( "Jagged List indices are out of range." )
+	}
+
+	return parent.data_ptr[ offset( list_id ) + index ];
+}
+
+template <class elem_type>
+uint32_t const & JaggedList<elem_type>::JAGGED_LIST_GET::size() const
+{
+	return parent.size;
+}
+
+template <class elem_type>
+uint32_t const & JaggedList<elem_type>::JAGGED_LIST_GET::length( const uint32_t list_id ) const
+{
+	if ( list_id >= size() )
+	{
+		throw std::out_of_range( "Jagged List list_id is out of range." )
+	}
+
+	return parent.size_flat;
+}
+
+template <class elem_type>
+uint32_t const & JaggedList<elem_type>::JAGGED_LIST_GET::offset( const uint32_t list_id ) const
+{
+	if ( list_id >= size() )
+	{
+		throw std::out_of_range( "Jagged List list_id is out of range." )
+	}
+
+	return parent.offsets_ptr[ list_id ];
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class elem_type>
+elem_type* JaggedList<elem_type>::JAGGED_LIST_SET::data_ptr()
+{
+	return parent.data_ptr;
+}
+
+template <class elem_type>
+uint32_t* JaggedList<elem_type>::JAGGED_LIST_SET::lengths_ptr()
+{
+	return parent.lengths_ptr;
+}
+
+template <class elem_type>
+uint32_t* JaggedList<elem_type>::JAGGED_LIST_SET::offsets_ptr()
+{
+	return parent.offsets_ptr;
+}
+
+template <class elem_type>
+elem_type& JaggedList<elem_type>::JAGGED_LIST_SET::operator()( const uint32_t list_id, const uint32_t index )
+{
+	if ( list_id >= parent.get.size() || index >= parent.get.length( list_id ) )
+	{
+		throw std::out_of_range( "Jagged List indices are out of range." )
+	}
+
+	return parent.data_ptr[ parent.get.offset( list_id ) + index ];
+}
+
+template <class elem_type>
+void JaggedList<elem_type>::JAGGED_LIST_SET::clear()
+{
 	if ( memory_location() == MemoryLocation::host )
 	{
-		delete[] data;
-		delete length;
-		delete size;
-		delete[] lengths;
-		delete[] offsets;
+		delete[] parent.data_ptr;
+		delete[] parent.lengths_ptr;
+		delete[] parent.offsets_ptr;
+
+		delete parent.size;
+		delete parent.size_flat;
+		
 	}
 	else if ( memory_location() == MemoryLocation::device )
 	{

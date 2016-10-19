@@ -1,7 +1,7 @@
-#include "DataStructures.h"
 #include "Matrix.h"
 
 using namespace kspace;
+
 
 template<class elem_type>
 void Matrix<elem_type>::initialise( const uint32_t num_of_columns, const uint32_t num_of_rows, const MemoryLocation memloc )
@@ -56,6 +56,9 @@ void Matrix<elem_type>::move_data( Matrix<elem_type>&& that )
 }
 
 template<class elem_type>
+void Matrix<elem_type>::Matrix() : get(*this), set(*this), memloc(MemoryLocation::host), data_ptr(nullptr), length(nullptr), number_of_columns(nullptr), number_of_rows(nullptr) {}
+
+template<class elem_type>
 Matrix<elem_type>::Matrix( const uint32_t N, const MemoryLocation memloc ) : get( *this ), set( *this )
 {
 	initialize( N, N, memloc );
@@ -84,4 +87,84 @@ Matrix<elem_type>::~Matrix()
 		HANDLE_ERROR( cudaFree( _number_of_columns ) );
 		HANDLE_ERROR( cudaFree( _number_of_rows ) );
 	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+template <class elem_type>
+MemoryLocation const & Matrix<elem_type>::MATRIX_GET::memory_location() const
+{
+	return parent.memloc;
+}
+
+template <class elem_type>
+elem_type const & Matrix<elem_type>::MATRIX_GET::operator()( const size_t column, const size_t row ) const
+{
+	if ( column >= number_of_columns() || row >= number_of_rows() )
+	{
+		throw std::out_of_range( "Matrix indices out of range." );
+	}
+
+	return parent.data_ptr[ column * number_of_rows() + row ];
+}
+
+template <class elem_type>
+elem_type const * Matrix<elem_type>::MATRIX_GET::data_ptr() const
+{
+	return parent.data_ptr;
+}
+
+template <class elem_type>
+elem_type const * Matrix<elem_type>::MATRIX_GET::data_ptr( const std::uint32_t column ) const
+{
+	if ( column >= number_of_columns() )
+	{
+		throw std::out_of_range( "Column index is greater than number of columns" );
+	}
+
+	return parent.data_ptr + column*number_of_rows();
+}
+
+template <class elem_type>
+uint32_t const & Matrix<elem_type>::MATRIX_GET::number_of_columns() const
+{
+	return parent.number_of_columns;
+}
+
+template <class elem_type>
+uint32_t const & Matrix<elem_type>::MATRIX_GET::number_of_rows() const
+{
+	return parent.number_of_rows;
+}
+
+template <class elem_type>
+uint32_t const & Matrix<elem_type>::MATRIX_GET::length() const
+{
+	return parent.length;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class elem_type>
+elem_type& Matrix<elem_type>::MATRIX_SET::operator()( const size_t column, const size_t row ) const
+{
+	if ( column >= parent.get.number_of_columns() || row >= parent.get.number_of_rows() )
+	{
+		throw std::out_of_range( "Matrix indices out of range." );
+	}
+
+	return parent.data_ptr[ column*parent.get.number_of_rows() + row ];
+}
+
+template <class elem_type>
+elem_type* Matrix<elem_type>::MATRIX_SET::data_ptr() const
+{
+	return parent.data_ptr;
+}
+
+template <class elem_type>
+elem_type* Matrix<elem_type>::MATRIX_SET::data_ptr( const std::uint32_t column ) const
+{
+	return parent.data_ptr + column*parent.get.number_of_rows();
 }

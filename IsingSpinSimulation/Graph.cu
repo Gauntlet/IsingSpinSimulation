@@ -4,7 +4,7 @@
 #include "Compression.h"
 #include <vector>
 
-#include "DataStructures.h"
+#include "details.h"
 #include "Graph.h"
 #include "Graph_File_Header.h"
 
@@ -71,7 +71,7 @@ Graph::Data Graph::readData( const FILEIO::FileHandle &file )
 	if ( !seeksuccess )
 	{
 		ArrayHandle<Byte> compressed_data( header.get.size_data_compressed() );
-		fread( compressed_data.set.data(), sizeof( std::uint8_t ), header.get.size_data_compressed(), file() );
+		fread( compressed_data.set.data_ptr(), sizeof( std::uint8_t ), header.get.size_data_compressed(), file() );
 
 		Compression compression;
 
@@ -96,7 +96,7 @@ Graph::Data Graph::readData( const FILEIO::FileHandle &file )
 		tmpdata.adjlist = new std::int32_t[ header.get.number_of_edges_in_graph() ];
 
 		//Copy the adjacency matrix to data structure.
-		memcpy( tmpdata.number_of_nodes, uncompressed_data.get.data(), sizeof( std::uint8_t )*N*N );
+		memcpy( tmpdata.number_of_nodes, uncompressed_data.get.data_ptr(), sizeof( std::uint8_t )*N*N );
 
 		//Create the degree, offset and adjacency list from the adjacency matrix.
 		for ( size_t i = 0; i < N; ++i )

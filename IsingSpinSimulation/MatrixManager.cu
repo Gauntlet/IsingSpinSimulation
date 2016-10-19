@@ -1,18 +1,17 @@
-#include "DataStructures.h"
-#include "MatrixShared.h"
+#include "MatrixManager.h"
 
 #include "cuda_runtime.h"
 
 using namespace kspace;
 
 template <class elem_type>
-void MatrixShared<elem_type>::initialise_host( const uint32_t number_of_columns, const uint32_t number_of_rows )
+void MatrixManager<elem_type>::initialise_host( const uint32_t number_of_columns, const uint32_t number_of_rows )
 {
 	host_ptr = new Matrix( number_of_columns, number_of_rows, MemoryLocation::host );
 }
 
 template <class elem_type>
-void MatrixShared<elem_type>::initialise_intermediary( const uint32_t number_of_columns, const uint32_t number_of_rows )
+void MatrixManager<elem_type>::initialise_intermediary( const uint32_t number_of_columns, const uint32_t number_of_rows )
 {
 	intermediary_ptr = new Matrix<elem_type>( number_of_columns, number_of_rows, MemoryLocation::device );
 
@@ -24,7 +23,7 @@ void MatrixShared<elem_type>::initialise_intermediary( const uint32_t number_of_
 }
 
 template <class elem_type>
-void MatrixShared<elem_type>::initialise_device()
+void MatrixManager<elem_type>::initialise_device()
 {
 	HANDLE_ERROR( cudaMalloc( (void**) &device_ptr, sizeof( Matrix<elem_type> ) ) );
 
@@ -34,7 +33,7 @@ void MatrixShared<elem_type>::initialise_device()
 }
 
 template <class elem_type>
-void MatrixShared<elem_type>::move_data( MatrixShared<elem_type>&& that )
+void MatrixManager<elem_type>::move_data( MatrixManager<elem_type>&& that )
 {
 	clear();
 
@@ -48,7 +47,7 @@ void MatrixShared<elem_type>::move_data( MatrixShared<elem_type>&& that )
 }
 
 template <class elem_type>
-void MatrixShared<elem_type>::move_data( Matrix<elem_type>&& that )
+void MatrixManager<elem_type>::move_data( Matrix<elem_type>&& that )
 {
 	clear();
 
@@ -73,7 +72,7 @@ void MatrixShared<elem_type>::move_data( Matrix<elem_type>&& that )
 }
 
 template <class elem_type>
-void MatrixShared<elem_type>::clear()
+void MatrixManager<elem_type>::clear()
 {
 	if ( nullptr != device_ptr )
 	{
@@ -92,7 +91,7 @@ void MatrixShared<elem_type>::clear()
 }
 
 template <class elem_type>
-MatrixShared<elem_type>::MatrixShared( const std::uint32_t N )
+MatrixManager<elem_type>::MatrixManager(const std::uint32_t N)
 {
 	initialise_host( N, N );
 	initialise_intermediary( N, N );
@@ -100,7 +99,7 @@ MatrixShared<elem_type>::MatrixShared( const std::uint32_t N )
 }
 
 template <class elem_type>
-MatrixShared<elem_type>::MatrixShared( const uint32_t number_of_columns, const uint32_t number_of_rows )
+MatrixManager<elem_type>::MatrixManager( const uint32_t number_of_columns, const uint32_t number_of_rows )
 {
 	initialise_host( number_of_columns, number_of_rows );
 	initialise_intermediary( number_of_columns, number_of_rows );
@@ -108,32 +107,32 @@ MatrixShared<elem_type>::MatrixShared( const uint32_t number_of_columns, const u
 }
 
 template <class elem_type>
-MatrixShared::~MatrixShared()
+MatrixManager::~MatrixManager()
 {
 	clear();
 }
 
 template<class elem_type>
-MatrixShared<elem_type>::MatrixShared( Matrix<elem_type>&& that )
+MatrixManager<elem_type>::MatrixManager( Matrix<elem_type>&& that )
 {
 	move_data( that );
 }
 
 template<class elem_type>
-MatrixShared<elem_type>& MatrixShared<elem_type>::operator=( Matrix<elem_type>&& that )
+MatrixManager<elem_type>& MatrixManager<elem_type>::operator=( Matrix<elem_type>&& that )
 {
 	move_data( that );
 	return *this;
 }
 
 template <class elem_type>
-void MatrixShared<elem_type>::host2device()
+void MatrixManager<elem_type>::host2device()
 {
 	HANDLE_ERROR( cudaMalloc( intermediary().data_ptr, host().get.data_ptr(), sizeof( elem_type ) * host().get.length(), cudaMemcpyHostToDevice ) );
 }
 
 template <class elem_type>
-void MatrixShared<elem_type>::device2host()
+void MatrixManager<elem_type>::device2host()
 {
 	HANDLE_ERROR( cudaMalloc( host().data_ptr, intermediary().get.data_ptr(), sizeof( elem_type ) * host().get.length(), cudaMemcpyDeviceToHost ) );
 }

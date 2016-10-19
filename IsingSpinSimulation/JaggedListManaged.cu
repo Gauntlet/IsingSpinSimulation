@@ -1,4 +1,5 @@
-#include "DataStructures.h"
+#include "details.h"
+#include "JaggedListManaged.h"
 
 using namespace kspace;
 
