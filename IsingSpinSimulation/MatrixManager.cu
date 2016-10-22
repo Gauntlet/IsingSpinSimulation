@@ -1,5 +1,4 @@
 #include "MatrixManager.h"
-
 #include "cuda_runtime.h"
 
 using namespace kspace;

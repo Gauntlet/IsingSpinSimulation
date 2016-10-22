@@ -1,18 +1,55 @@
 
 #include "File_IO.h"
-#include "ArrayHandle.h"
 #include "Compression.h"
-#include <vector>
-
+#include "Array.h"
 #include "details.h"
 #include "Graph.h"
 #include "Graph_File_Header.h"
 
+#include <vector>
+
 using namespace kspace::GRAPH;
 using namespace kspace::FILEIO;
 
+void Graph::Data::move_data( Data&& that )
+{
+	clear();
+
+	memloc = that.memloc;
+	number_of_nodes = that.number_of_nodes;
+	adjmat = that.adjmat;
+	adjlist = that.adjlist;
+	degrees = that.degrees;
+	offsets = that.offsets;
+
+	that.memloc = MemoryLocation::host;
+	that.number_of_nodes = nullptr;
+	that.adjmat = nullptr;
+	that.adjlist = nullptr;
+	that.degrees = nullptr;
+	that.offsets = nullptr;
+}
+
 Graph::Data::~Data()
 {
+	clear();
+}
+
+Graph::Data::Data( Data&& that )
+{
+	move_data( std::move(that) );
+}
+
+Graph::Data& Graph::Data::operator=( Data&& that )
+{
+	move_data( std::move(that) );
+
+	return *this;
+}
+
+void Graph::Data::clear()
+{
+
 	if ( MemoryLocation::host == memloc )
 	{
 		delete number_of_nodes;
@@ -23,33 +60,14 @@ Graph::Data::~Data()
 	}
 	else if ( MemoryLocation::device == memloc )
 	{
-		cudaFree( adjmat );
-		cudaFree( adjlist );
-		cudaFree( degrees );
-		cudaFree( offsets );
+		HANDLE_ERROR(cudaFree( number_of_nodes ));
+		HANDLE_ERROR( cudaFree( adjmat ) );
+		HANDLE_ERROR( cudaFree( adjlist ) );
+		HANDLE_ERROR( cudaFree( degrees ) );
+		HANDLE_ERROR( cudaFree( offsets ) );
 	}
-}
 
-Graph::Data::Data( Data&& that ) : number_of_nodes( std::move( that.number_of_nodes ) ), adjmat( std::move( that.adjmat ) ), adjlist( std::move( that.adjlist ) ), degrees( std::move( that.degrees ) ), offsets( std::move( that.offsets ) )
-{
-	that.clear();
-}
-
-Graph::Data& Graph::Data::operator=( Data&& that )
-{
-	number_of_nodes = std::move( that.number_of_nodes );
-	adjmat = std::move( that.adjmat );
-	adjlist = std::move( that.adjlist );
-	degrees = std::move( that.degrees );
-	offsets = std::move( that.offsets );
-
-	that.clear();
-
-	return *this;
-}
-
-void Graph::Data::clear()
-{
+	memloc = MemoryLocation::host;
 	number_of_nodes = nullptr;
 	adjmat = nullptr;
 	adjlist = nullptr;
@@ -59,7 +77,7 @@ void Graph::Data::clear()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Graph::Data Graph::readData( const FILEIO::FileHandle &file )
+Graph::Data&& Graph::readData( const FILEIO::FileHandle &file )
 {
 	Data tmpdata;
 
@@ -70,7 +88,7 @@ Graph::Data Graph::readData( const FILEIO::FileHandle &file )
 
 	if ( !seeksuccess )
 	{
-		ArrayHandle<Byte> compressed_data( header.get.size_data_compressed() );
+		Array<Byte> compressed_data( header.get.size_data_compressed() );
 		fread( compressed_data.set.data_ptr(), sizeof( std::uint8_t ), header.get.size_data_compressed(), file() );
 
 		Compression compression;
@@ -85,7 +103,7 @@ Graph::Data Graph::readData( const FILEIO::FileHandle &file )
 			det.bits.unitbit = 1;
 		}
 
-		ArrayHandle<Byte> uncompressed_data = std::move( compression.inflate( compressed_data, det ) );
+		Array<Byte> uncompressed_data = std::move( compression.inflate( compressed_data, det ) );
 
 		const std::int32_t N = header.get.number_of_nodes_in_graph();
 
@@ -119,7 +137,7 @@ Graph::Data Graph::readData( const FILEIO::FileHandle &file )
 		throw std::runtime_error( "fseek to beginning of graph data failed: " + std::to_string( seeksuccess ) );
 	}
 
-	return tmpdata;
+	return std::move(tmpdata);
 }
 
 
@@ -136,7 +154,6 @@ Graph::Graph::Graph( const std::string fname, const MemoryLocation memloc ) : ge
 		fread( fileversion, sizeof( std::uint8_t ), 2, file() );
 		if ( fileversion[ 0 ] <= _MAJOR_VERSION_ && fileversion[ 1 ] <= _MINOR_VERSION_ )
 		{
-
 			Data tmpdata = readData( file );
 			const std::uint32_t N = *data.number_of_nodes;
 			//Once data is loaded into host memory it either kept in host memory or transfered to device memory.
@@ -148,17 +165,17 @@ Graph::Graph::Graph( const std::string fname, const MemoryLocation memloc ) : ge
 			{
 				data.memloc = MemoryLocation::device;
 
-				HANDLE_ERROR( cudaMalloc( (void**) &data.number_of_nodes, sizeof( std::int32_t ) ) );
-				HANDLE_ERROR( cudaMalloc( (void**) &data.adjmat, sizeof( std::uint8_t )*N*N ) );
-				HANDLE_ERROR( cudaMalloc( (void**) &data.adjlist, sizeof( std::int32_t )*tmpdata.offsets[ N + 1 ] ) );
-				HANDLE_ERROR( cudaMalloc( (void**) &data.degrees, sizeof( std::int32_t )*N ) );
-				HANDLE_ERROR( cudaMalloc( (void**) &data.offsets, sizeof( std::uint32_t )*( N + 1 ) ) );
+				HANDLE_ERROR( cudaMalloc( (void**) &data.number_of_nodes,	sizeof( std::int32_t ) ) );
+				HANDLE_ERROR( cudaMalloc( (void**) &data.adjmat,			sizeof( std::uint8_t )*N*N ) );
+				HANDLE_ERROR( cudaMalloc( (void**) &data.adjlist,			sizeof( std::int32_t )*tmpdata.offsets[ N + 1 ] ) );
+				HANDLE_ERROR( cudaMalloc( (void**) &data.degrees,			sizeof( std::int32_t )*N ) );
+				HANDLE_ERROR( cudaMalloc( (void**) &data.offsets,			sizeof( std::uint32_t )*( N + 1 ) ) );
 
-				HANDLE_ERROR( cudaMemcpy( data.number_of_nodes, &data.number_of_nodes, sizeof( std::int32_t ), cudaMemcpyHostToDevice ) );
-				HANDLE_ERROR( cudaMemcpy( data.adjmat, data.adjmat, sizeof( std::uint8_t )*N*N, cudaMemcpyHostToDevice ) );
-				HANDLE_ERROR( cudaMemcpy( data.adjlist, data.adjlist, sizeof( std::int32_t )*tmpdata.offsets[ N + 1 ], cudaMemcpyHostToDevice ) );
-				HANDLE_ERROR( cudaMemcpy( data.degrees, data.degrees, sizeof( int32_t )*N, cudaMemcpyHostToDevice ) );
-				HANDLE_ERROR( cudaMemcpy( data.offsets, data.offsets, sizeof( std::uint32_t )*( N + 1 ), cudaMemcpyHostToDevice ) );
+				HANDLE_ERROR( cudaMemcpy( data.number_of_nodes, &tmpdata.number_of_nodes,	sizeof( std::int32_t ),								cudaMemcpyHostToDevice ) );
+				HANDLE_ERROR( cudaMemcpy( data.adjmat,			tmpdata.adjmat,				sizeof( std::uint8_t )*N*N,							cudaMemcpyHostToDevice ) );
+				HANDLE_ERROR( cudaMemcpy( data.adjlist,			tmpdata.adjlist,			sizeof( std::int32_t )*tmpdata.offsets[ N + 1 ],	cudaMemcpyHostToDevice ) );
+				HANDLE_ERROR( cudaMemcpy( data.degrees,			tmpdata.degrees,			sizeof( int32_t )*N,								cudaMemcpyHostToDevice ) );
+				HANDLE_ERROR( cudaMemcpy( data.offsets,			tmpdata.offsets,			sizeof( std::uint32_t )*( N + 1 ),					cudaMemcpyHostToDevice ) );
 			}
 		}
 		else
@@ -174,21 +191,21 @@ Graph::Graph::Graph( const std::string fname, const MemoryLocation memloc ) : ge
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int32_t const & Graph::GET::number_of_nodes() const
+int32_t const & Graph::GRAPH_GET::number_of_nodes() const
 {
 	return *parent.data.number_of_nodes;
 }
 
-int32_t const & Graph::GET::degree( const uint32_t v ) const
+int32_t const & Graph::GRAPH_GET::degree( const uint32_t v ) const
 {
 	if ( number_of_nodes() <= v )
 	{
-		throw std::out_of_range( "degree() index is out of bounds: v=" + std::to_string(v) );
+		throw std::out_of_range( "degree() index is out of bounds: v=" + std::to_string( v ) );
 	}
 	return parent.data.degrees[ v ];
 }
 
-std::uint32_t const & Graph::GET::offset( const size_t v ) const
+std::uint32_t const & Graph::GRAPH_GET::offset( const size_t v ) const
 {
 	if ( number_of_nodes() <= v )
 	{
@@ -198,17 +215,17 @@ std::uint32_t const & Graph::GET::offset( const size_t v ) const
 	return parent.data.offsets[ v ];
 }
 
-bool const & Graph::GET::is_connected( const uint32_t v, const uint32_t w ) const
+bool const & Graph::GRAPH_GET::is_connected( const uint32_t v, const uint32_t w ) const
 {
 	if ( number_of_nodes() <= v || number_of_nodes() <= w )
 	{
-		throw std::out_of_range( "is_connected() indices are out of bounds: (v,w)=(" + std::to_string( v ) + "," + std::to_string(w) + ")" );
+		throw std::out_of_range( "is_connected() indices are out of bounds: (v,w)=(" + std::to_string( v ) + "," + std::to_string( w ) + ")" );
 	}
 
 	return parent.data.adjmat[ v * number_of_nodes() + w ];
 }
 
-int32_t const & Graph::GET::neighbour( const uint32_t v, const uint32_t kth_neighbour ) const
+int32_t const & Graph::GRAPH_GET::neighbour( const uint32_t v, const uint32_t kth_neighbour ) const
 {
 	if ( number_of_nodes() <= v || number_of_nodes() <= kth_neighbour )
 	{
@@ -218,27 +235,27 @@ int32_t const & Graph::GET::neighbour( const uint32_t v, const uint32_t kth_neig
 	return parent.data.adjlist[ offset( v ) + kth_neighbour ];
 }
 
-kspace::MemoryLocation const & Graph::GET::memory_location() const
+kspace::MemoryLocation const & Graph::GRAPH_GET::memory_location() const
 {
 	return parent.data.memloc;
 }
 
-std::uint8_t const * Graph::GET::adjmat() const
+std::uint8_t const * Graph::GRAPH_GET::adjmat() const
 {
 	return parent.data.adjmat;
 }
 
-std::int32_t const * Graph::GET::adjlist() const
+std::int32_t const * Graph::GRAPH_GET::adjlist() const
 {
 	return parent.data.adjlist;
 }
 
-std::int32_t const * Graph::GET::degrees() const
+std::int32_t const * Graph::GRAPH_GET::degrees() const
 {
 	return parent.data.degrees;
 }
 
-std::uint32_t const * Graph::GET::offsets() const
+std::uint32_t const * Graph::GRAPH_GET::offsets() const
 {
 	return parent.data.offsets;
 }
@@ -246,22 +263,22 @@ std::uint32_t const * Graph::GET::offsets() const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::uint8_t* Graph::SET::adjmat() const
+std::uint8_t* Graph::GRAPH_SET::adjmat() const
 {
 	return parent.data.adjmat;
 }
 
-std::int32_t* Graph::SET::adjlist() const
+std::int32_t* Graph::GRAPH_SET::adjlist() const
 {
 	return parent.data.adjlist;
 }
 
-std::int32_t* Graph::SET::degrees() const
+std::int32_t* Graph::GRAPH_SET::degrees() const
 {
 	return parent.data.degrees;
 }
 
-std::uint32_t* Graph::SET::offsets() const
+std::uint32_t* Graph::GRAPH_SET::offsets() const
 {
 	return parent.data.offsets;
 }

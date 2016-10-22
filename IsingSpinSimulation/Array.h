@@ -28,12 +28,12 @@ namespace kspace
 		void move_data( Array<elem_type>&& that );
 	public:
 		/**
-		* get is a public object that provides read only access to private data stored within the class.
+		* get is a public object that provides methods with read only access to private data stored within Array.
 		*/
 		ARRAY_GET get;
 
 		/**
-		* set is a public object that provides read and write access to private data stored within the class.
+		* set is a public object that provides methods with read and write access to private data stored within Array..
 		*/
 		ARRAY_SET set;
 
@@ -80,7 +80,7 @@ namespace kspace
 		* Moves the pointers stored in 'that' Array to be managed by the one being constructed..
 		* @param an Array object.
 		*/
-		Array<elem_type>::Array( Array<elem_type>&& that )
+		Array( Array<elem_type>&& that )
 		{
 			move_data( that );
 		};
@@ -91,7 +91,7 @@ namespace kspace
 		* @param an Array object on the RHS.
 		* @return an A
 		*/
-		Array<elem_type>& Array<elem_type>::operator=( Array<elem_type>&& that )
+		Array<elem_type>& operator=( Array<elem_type>&& that )
 		{
 			move_data( that );
 			return *this;

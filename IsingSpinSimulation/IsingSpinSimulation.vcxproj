@@ -23,26 +23,25 @@
     <CudaCompile Include="Array.cu" />
     <CudaCompile Include="CrowdIdentification.cu" />
     <CudaCompile Include="Graph.cu" />
-    <CudaCompile Include="GraphShared.cu" />
+    <CudaCompile Include="GraphManager.cu" />
     <CudaCompile Include="IsingSpinModel_parallel.cu" />
     <CudaCompile Include="IsingSpinModelBase.cu" />
     <CudaCompile Include="IsingSpinModelSave.cu" />
     <CudaCompile Include="IsingSpinModel_MetropolisHastings.cu" />
     <CudaCompile Include="JaggedList.cu" />
-    <CudaCompile Include="JaggedListManaged.cu" />
+    <CudaCompile Include="JaggedListManager.cu" />
     <CudaCompile Include="Matrix.cu" />
     <CudaCompile Include="MatrixManager.cu" />
-    <CudaCompile Include="Source.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Array.h" />
     <ClInclude Include="Compression.h" />
     <ClInclude Include="CrowdIdentification.h" />
     <ClInclude Include="details.h" />
-    <ClInclude Include="GraphShared.h" />
+    <ClInclude Include="GraphManager.h" />
     <ClInclude Include="Graph_File_Header.h" />
     <ClInclude Include="JaggedList.h" />
-    <ClInclude Include="JaggedListManaged.h" />
+    <ClInclude Include="JaggedListManager.h" />
     <ClInclude Include="File_IO.h" />
     <ClInclude Include="Graph.h" />
     <ClInclude Include="Ising_Spin_Model.h" />

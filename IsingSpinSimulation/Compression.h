@@ -2,7 +2,7 @@
 #define COMPRESSION_H
 
 #include "File_IO.h"
-#include "ArrayHandle.h"
+#include "Array.h"
 
 namespace kspace
 {
@@ -28,21 +28,21 @@ namespace kspace
 
 			struct Compressed_Data
 			{
-				ArrayHandle data;
+				Array<std::uint8_t> data;
 				Details details;
 
 				Compressed_Data( Compressed_Data&& that ) : data( std::move( that.data ) ), details( that.details ) {};
-				Compressed_Data( ArrayHandle &data, Details &details ) : data( std::move( data ) ), details( details ) {};
+				Compressed_Data( Array<std::uint8_t> &data, Details &details ) : data( std::move( data ) ), details( details ) {};
 			};
 
-			Compressed_Data deflate( const ArrayHandle& uncompressed_data );
-			Compressed_Data deflate( const ArrayHandle& uncompressed_data, const Bits& bits );
+			Compressed_Data deflate( const Array<std::uint8_t>& uncompressed_data );
+			Compressed_Data deflate( const Array<std::uint8_t>& uncompressed_data, const Bits& bits );
 
-			ArrayHandle inflate( const ArrayHandle& compressed_data, const Details& details );
+			Array<std::uint8_t> inflate( const Array<std::uint8_t>& compressed_data, const Details& details );
 
 		protected:
-			ArrayHandle bit_pack( const ArrayHandle &uncompressed_data, const Bits &bits );
-			ArrayHandle bit_unpack( const ArrayHandle &bitpacked_data, const Details &details );
+			Array<std::uint8_t> bit_pack( const Array<std::uint8_t> &uncompressed_data, const Bits &bits );
+			Array<std::uint8_t> bit_unpack( const Array<std::uint8_t> &bitpacked_data, const Details &details );
 		};
 	}
 }

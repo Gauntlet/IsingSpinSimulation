@@ -4,7 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include "zlib.h"
-#include "KDetails.h"
+#include "details.h"
 
 namespace kspace
 {

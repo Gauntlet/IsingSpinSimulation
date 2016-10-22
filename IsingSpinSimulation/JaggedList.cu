@@ -24,25 +24,28 @@ void JaggedList<elem_type>::move_data( JaggedList<elem_type>&& that )
 }
 
 template <class elem_type>
-JaggedList<elem_type>::JaggedList(const uint32_t N, const uint32_t* lengths, const MemoryLocation memloc) : get(*this), set(*this)
+JaggedList<elem_type>::JaggedList( uint32_t const &  N, uint32_t const * lengths, MemoryLocation const & memloc ) : get( *this ), set( *this )
 {
-	memloc = memloc;
+	this->memloc = memloc;
 
 	uint32_t* tmpoffsets = new uint32_t[ N + 1 ]();
 	std::partial_sum( lengths, lengths + N, tmpoffsets + 1 );
 
 	if ( memloc == MemoryLocation::host )
 	{
-		data = new elem_type[ tmpoffsets[ N ] ]();
-		length = new uint32_t();
-		size = new uint32_t();
-		lengths = new uint32_t[ N ]();
-		offsets = new uint32_t[ N + 1 ]();
+		data_ptr = new elem_type[ tmpoffsets[ N ] ]();
 
-		( *length ) = tmpoffsets[ N ];
+		this->lengths = new uint32_t[ N ]();
+
+		offsets_ptr = std::move( tmpoffsets );
+		tmpoffsets = nullptr;
+
+		size = new uint32_t();
+		size_flat = new uint32_t();
+
+		( *length ) = offsets_ptr[ N ];
 		( *size ) = N;
-		memcpy( lengths, lengths, sizeof( uint32_t ) * N );
-		memcpy( offsets, tmpoffsets, sizeof( uint32_t ) * ( N + 1 ) );
+		memcpy( (void*) lengths, (void*) lengths, sizeof( uint32_t ) * N );
 	}
 	else if ( memloc == MemoryLocation::device )
 	{
@@ -54,11 +57,14 @@ JaggedList<elem_type>::JaggedList(const uint32_t N, const uint32_t* lengths, con
 		HANDLE_ERROR( cudaMemset( data, 0, sizeof( elem_type ) * tmpoffsets[ N ] ) );
 
 		HANDLE_ERROR( cudaMemcpy( length, &N, sizeof( uint32_t ), cudaMemcpyHostToDevice ) );
-		HANDLE_ERROR( cudaMemcpy( lengths, lengths, sizeof( uint32_t ) * N, cudaMemcpyHostToDevice ) );
+		HANDLE_ERROR( cudaMemcpy( (void*) lengths, (void*) lengths, sizeof( uint32_t ) * N, cudaMemcpyHostToDevice ) );
 		HANDLE_ERROR( cudaMemcpy( offsets, tmpoffsets, sizeof( uint32_t ) * ( N + 1 ), cudaMemcpyHostToDevice ) );
 	}
 
-	delete[] tmpoffsets;
+	if ( nullptr == tmpoffsets )
+	{
+		delete[] tmpoffsets;
+	}
 }
 
 template <class elem_type>
@@ -70,7 +76,7 @@ JaggedList<elem_type>::~JaggedList()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class elem_type>
-MemoryLocation const & JaggedList<elem_type>::JAGGED_LIST_GET::memory_location() const
+MemoryLocation JaggedList<elem_type>::JAGGED_LIST_GET::memory_location() const
 {
 	return parent.memloc;
 }
@@ -82,7 +88,7 @@ elem_type const * JaggedList<elem_type>::JAGGED_LIST_GET::data_ptr() const
 }
 
 template <class elem_type>
-elem_type const * JaggedList<elem_type>::JAGGED_LIST_GET::lengths_ptr() const
+std::uint32_t const * JaggedList<elem_type>::JAGGED_LIST_GET::lengths_ptr() const
 {
 	return parent.lengths_ptr;
 }
@@ -94,11 +100,11 @@ uint32_t const * JaggedList<elem_type>::JAGGED_LIST_GET::offsets_ptr() const
 }
 
 template <class elem_type>
-elem_type const & JaggedList<elem_type>::JAGGED_LIST_GET::operator()( const uint32_t list_id, const uint32_t index ) const
+elem_type const & JaggedList<elem_type>::JAGGED_LIST_GET::operator()( uint32_t const list_id, uint32_t const index ) const
 {
 	if ( list_id >= size() || index >= length( list_id ) )
 	{
-		throw std::out_of_range( "Jagged List indices are out of range." )
+		throw std::out_of_range( "Jagged List indices are out of range." );
 	}
 
 	return parent.data_ptr[ offset( list_id ) + index ];
@@ -107,18 +113,18 @@ elem_type const & JaggedList<elem_type>::JAGGED_LIST_GET::operator()( const uint
 template <class elem_type>
 uint32_t const & JaggedList<elem_type>::JAGGED_LIST_GET::size() const
 {
-	return parent.size;
+	return *parent.size;
 }
 
 template <class elem_type>
-uint32_t const & JaggedList<elem_type>::JAGGED_LIST_GET::length( const uint32_t list_id ) const
+uint32_t const & JaggedList<elem_type>::JAGGED_LIST_GET::length( uint32_t const list_id ) const
 {
 	if ( list_id >= size() )
 	{
-		throw std::out_of_range( "Jagged List list_id is out of range." )
+		throw std::out_of_range( "Jagged List list_id is out of range." );
 	}
 
-	return parent.size_flat;
+	return *parent.size_flat;
 }
 
 template <class elem_type>
@@ -126,7 +132,7 @@ uint32_t const & JaggedList<elem_type>::JAGGED_LIST_GET::offset( const uint32_t 
 {
 	if ( list_id >= size() )
 	{
-		throw std::out_of_range( "Jagged List list_id is out of range." )
+		throw std::out_of_range( "Jagged List list_id is out of range." );
 	}
 
 	return parent.offsets_ptr[ list_id ];
@@ -157,7 +163,7 @@ elem_type& JaggedList<elem_type>::JAGGED_LIST_SET::operator()( const uint32_t li
 {
 	if ( list_id >= parent.get.size() || index >= parent.get.length( list_id ) )
 	{
-		throw std::out_of_range( "Jagged List indices are out of range." )
+		throw std::out_of_range( "Jagged List indices are out of range." );
 	}
 
 	return parent.data_ptr[ parent.get.offset( list_id ) + index ];
@@ -171,10 +177,8 @@ void JaggedList<elem_type>::JAGGED_LIST_SET::clear()
 		delete[] parent.data_ptr;
 		delete[] parent.lengths_ptr;
 		delete[] parent.offsets_ptr;
-
 		delete parent.size;
 		delete parent.size_flat;
-		
 	}
 	else if ( memory_location() == MemoryLocation::device )
 	{

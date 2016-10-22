@@ -60,9 +60,6 @@
     <ClInclude Include="JaggedList.h">
       <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
     </ClInclude>
-    <ClInclude Include="GraphShared.h">
-      <Filter>Headers\Data_Structures\Graph</Filter>
-    </ClInclude>
     <ClInclude Include="details.h">
       <Filter>Headers\Data_Structures</Filter>
     </ClInclude>
@@ -72,16 +69,15 @@
     <ClInclude Include="MatrixManager.h">
       <Filter>Headers\Data_Structures\Matrices</Filter>
     </ClInclude>
-    <ClInclude Include="JaggedListManaged.h">
+    <ClInclude Include="JaggedListManager.h">
       <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphManager.h">
+      <Filter>Headers\Data_Structures\Graph</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="Source.cu" />
     <CudaCompile Include="Graph.cu">
-      <Filter>Headers\Data_Structures\Graph</Filter>
-    </CudaCompile>
-    <CudaCompile Include="GraphShared.cu">
       <Filter>Headers\Data_Structures\Graph</Filter>
     </CudaCompile>
     <CudaCompile Include="IsingSpinModelBase.cu">
@@ -114,8 +110,11 @@
     <CudaCompile Include="MatrixManager.cu">
       <Filter>Headers\Data_Structures\Matrices</Filter>
     </CudaCompile>
-    <CudaCompile Include="JaggedListManaged.cu">
+    <CudaCompile Include="JaggedListManager.cu">
       <Filter>Headers\Data_Structures\Jagged_Lists</Filter>
+    </CudaCompile>
+    <CudaCompile Include="GraphManager.cu">
+      <Filter>Headers\Data_Structures\Graph</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,6 @@
 #include <sstream>
 #include "Parameters.h"
+#include "details.h"
 using namespace kspace::GRAPH;
 
 
@@ -234,27 +235,27 @@ Parameters::Parameter::Parameter( const std::string name, const std::uint8_t vsi
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::vector<Parameters::Parameter>::const_iterator Parameters::GET::cbegin() const
+std::vector<Parameters::Parameter>::const_iterator Parameters::PARAMETERS_GET::cbegin() const
 {
 	return parent.list.cbegin();
 }
 
-std::vector<Parameters::Parameter>::const_iterator Parameters::GET::cend() const
+std::vector<Parameters::Parameter>::const_iterator Parameters::PARAMETERS_GET::cend() const
 {
 	return parent.list.cend();
 }
 
-std::size_t Parameters::GET::size() const
+std::size_t Parameters::PARAMETERS_GET::size() const
 {
 	return parent.list.size();
 }
 
-Parameters::Parameter Parameters::GET::at( const std::size_t p ) const
+Parameters::Parameter Parameters::PARAMETERS_GET::at( const std::size_t p ) const
 {
 	return parent.list.at( p );
 }
 
-Parameters::FileFormattedParameters Parameters::GET::as_array() const
+Parameters::FileFormattedParameters Parameters::PARAMETERS_GET::as_array() const
 {
 	size_t namesa_size = 0;
 	size_t valuesa_size = 0;
@@ -265,7 +266,7 @@ Parameters::FileFormattedParameters Parameters::GET::as_array() const
 		valuesa_size += it->vsize;
 	}
 
-	ArrayHandle<std::uint8_t> parama( namesa_size + valuesa_size + ( ( ( *this ).size() - 3 ) * 2 ));
+	Array<std::uint8_t> parama( namesa_size + valuesa_size + ( ( ( *this ).size() - 3 ) * 2 ));
 
 	const size_t vtypea_offset = namesa_size;
 	const size_t vsizea_offset = vtypea_offset + size() - 3;
@@ -296,18 +297,18 @@ Parameters::FileFormattedParameters Parameters::GET::as_array() const
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-std::vector<Parameters::Parameter>::iterator Parameters::SET::begin()
+std::vector<Parameters::Parameter>::iterator Parameters::PARAMETERS_SET::begin()
 {
 	return parent.list.begin();
 }
 
-std::vector<Parameters::Parameter>::iterator Parameters::SET::end()
+std::vector<Parameters::Parameter>::iterator Parameters::PARAMETERS_SET::end()
 {
 	return parent.list.end();
 }
 
 template<class T>
-void Parameters::SET::add( const std::string name, const T value )
+void Parameters::PARAMETERS_SET::add( const std::string name, const T value )
 {
 	Parameter p;
 	p.name = name;
@@ -318,7 +319,7 @@ void Parameters::SET::add( const std::string name, const T value )
 	parent.list.push_back( p );
 }
 
-void Parameters::SET::remove( const std::string name )
+void Parameters::PARAMETERS_SET::remove( const std::string name )
 {
 	for ( auto it = begin(); end() != it; ++it )
 	{
@@ -330,12 +331,12 @@ void Parameters::SET::remove( const std::string name )
 	}
 }
 
-void Parameters::SET::remove( const std::size_t index )
+void Parameters::PARAMETERS_SET::remove( const std::size_t index )
 {
 	parent.list.erase( begin() + index );
 }
 
-Parameters::Parameter& Parameters::SET::at( const std::size_t p )
+Parameters::Parameter& Parameters::PARAMETERS_SET::at( const std::size_t p )
 {
 	return parent.list.at( p );
 }
