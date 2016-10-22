@@ -4,19 +4,42 @@
 using namespace kspace::GRAPH;
 
 
-
+/**
+* This casts a basic type variable into another basic type without changing the bits.
+*
+* For example:
+*
+* float a = 4.3;	//A float.
+*
+* int b = preserved_cast<int>(a);	//a has been casted into an int such that no data is lost.
+*
+* float c = preserved_cast<float>(b); //b has been casted back into a float and we obtain the original float. c == 4.3.
+*
+* int d = (int) a; //a has been casted into an int, the .3 is lost.
+* float f = (float) d; //d is cast back itno a float but we no longer have the .3. f==4.
+*/
 template <class RT, class T>
 RT preserved_cast( T num )
 {
 	return *( (RT*) ( &num ) );
 }
 
+/**
+* Recasts a pointer into another type of pointer.
+*
+* Allows the ability to write and read multibyte numbers from an array of bytes.
+*/
 template <class RT, class T>
 RT preserved_cast( T* num )
 {
 	return *( (RT*) ( num ) );
 }
 
+/**
+* The values of parameters are stored in a byte array in the file and consist of many different types.
+* To store them in a list and be able to access them easily we store them as string. This function will
+* cast to the string after being cast to the appropriate type.
+*/
 template <class T>
 std::string num2str( const Parameters::NUMTYPE numtype, T num )
 {
@@ -70,6 +93,11 @@ std::string num2str( const Parameters::NUMTYPE numtype, T num )
 	}
 }
 
+/**
+* When parameter values are stored in the file they are stored as a series of bytes. To identify how these values should be read
+* when loading from file the type the value is stored as well. This function returns an enum which indicates the type of the value
+* to it.
+*/
 template <class T>
 Parameters::NUMTYPE to_numtype( T num )
 {
@@ -127,6 +155,12 @@ Parameters::NUMTYPE to_numtype( T num )
 	}
 }
 
+/**
+* Returns an enum depending on the template type.
+* 
+* When parameter values are stored in the file they are stored as a series of bytes, to identify the type of the value
+* an enum indicating the type is also stored. This function provides the enum based on the template typename passed to it.
+*/
 template <class T>
 Parameters::NUMTYPE to_numtype()
 {
@@ -184,6 +218,12 @@ Parameters::NUMTYPE to_numtype()
 	}
 }
 
+/**
+* Converts a string into a number.
+*
+* Parameter values are stored as strings in the list. Numerical parameters are converted back into a number before
+* being written to file as this saves space.
+*/
 template <class T>
 T str2num( const std::string strnum )
 {
@@ -194,20 +234,29 @@ T str2num( const std::string strnum )
 	return num;
 }
 
+/**
+* Parameterised constuctor that creates a list of parameters containing the standard parameters.
+*/
 Parameters::Parameters( const Graph::ID graph_id, const std::int32_t number_of_nodes, const std::uint32_t number_of_edges ) : get( *this ), set( *this )
 {
-
+	list.resize( 3 );
+	list.at( 0 ) = Parameter( "GRAPH_ID", sizeof( Graph::ID ), num2str( Parameters::NUMTYPE::UINT8, graph_id) );
+	list.at( 1 ) = Parameter( "NUMBER_OF_NODES", sizeof( std::int32_t ), num2str( Parameters::NUMTYPE::INT32, number_of_nodes ) );
+	list.at( 2 ) = Parameter( "NUMBER_OF_EDGES", sizeof( std::uint32_t ), num2str( Parameters::NUMTYPE::UINT32, number_of_edges ) );
 }
 
-Parameters::Parameters( const std::size_t number_of_parameters, const FileFormattedParameters& params ) : get( *this ), set( *this )
+/**
+* Constructs a list of parameters from the parameters passed in the file format.
+*/
+Parameters::Parameters( const FileFormattedParameters& params ) : get( *this ), set( *this )
 {
-	list.resize( number_of_parameters );
+	list.resize( params.num_of_parameters );
 	list.at( 0 ) = Parameter( "GRAPH_ID", sizeof( Graph::ID ), num2str( Parameters::NUMTYPE::CHAR, params.id ) );
 	list.at( 1 ) = Parameter( "NUMBER_OF_NODES", sizeof( std::int32_t ), num2str( Parameters::NUMTYPE::INT32, params.num_of_nodes ) );
 	list.at( 2 ) = Parameter( "NUMBER_OF_EDGES", sizeof( std::uint32_t ), num2str( Parameters::NUMTYPE::UINT32, params.num_of_edges ) );
 
 	size_t names_size = 0;
-	for ( size_t i = 0; i < number_of_parameters - 3; ++i )
+	for ( size_t i = 0; i < params.num_of_parameters - 3; ++i )
 	{
 		list.at( 3 + i ).value = (char*) params.parameters.set.data_ptr() + names_size;
 		names_size += list.at( 3 + i ).value.size() + 1;
@@ -215,19 +264,22 @@ Parameters::Parameters( const std::size_t number_of_parameters, const FileFormat
 
 
 	size_t values_offset = 0;
-	for ( size_t i = 0; i < number_of_parameters - 3; ++i )
+	for ( size_t i = 0; i < params.num_of_parameters - 3; ++i )
 	{
 		list.at( 3 + i ).vtype = ( Parameters::NUMTYPE ) params.parameters.get.data_ptr()[ names_size + i ];
 
-		list.at( 3 + i ).vsize = params.parameters.get.data_ptr()[ names_size + number_of_parameters - 3 + i ];
+		list.at( 3 + i ).vsize = params.parameters.get.data_ptr()[ names_size + params.num_of_parameters - 3 + i ];
 
-		list.at( 3 + i ).value = num2str( list.at( 3 + i ).vtype, params.parameters.get.data_ptr() + names_size + 2 * number_of_parameters - 6 + values_offset );
+		list.at( 3 + i ).value = num2str( list.at( 3 + i ).vtype, params.parameters.get.data_ptr() + names_size + 2 * params.num_of_parameters - 6 + values_offset );
 		values_offset += list.at( 3 + i ).vsize;
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/**
+* Sets the name, value, value size and value type of a parameter on creation.
+*/
 Parameters::Parameter::Parameter( const std::string name, const std::uint8_t vsize, const std::string value ) : name( name ), vsize( vsize ), value( value ), vtype( to_numtype( value ) )
 {
 	
@@ -235,26 +287,41 @@ Parameters::Parameter::Parameter( const std::string name, const std::uint8_t vsi
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/**
+* A const iterator to the beginning of the parameter list.
+*/
 std::vector<Parameters::Parameter>::const_iterator Parameters::PARAMETERS_GET::cbegin() const
 {
 	return parent.list.cbegin();
 }
 
+/**
+* A const iterator to the end of the parameter list.
+*/
 std::vector<Parameters::Parameter>::const_iterator Parameters::PARAMETERS_GET::cend() const
 {
 	return parent.list.cend();
 }
 
+/**
+* The number of parameters in the list.
+*/
 std::size_t Parameters::PARAMETERS_GET::size() const
 {
 	return parent.list.size();
 }
 
-Parameters::Parameter Parameters::PARAMETERS_GET::at( const std::size_t p ) const
+/**
+* Read only access to a parameter at a particular position in the list.
+*/
+Parameters::Parameter const & Parameters::PARAMETERS_GET::at( const std::size_t p ) const
 {
 	return parent.list.at( p );
 }
 
+/**
+* Formats the the list of parameters into a byte array which can be written into kgraph file.
+*/
 Parameters::FileFormattedParameters Parameters::PARAMETERS_GET::as_array() const
 {
 	size_t namesa_size = 0;
@@ -297,16 +364,25 @@ Parameters::FileFormattedParameters Parameters::PARAMETERS_GET::as_array() const
 
 ////////////////////////////////////////////////////////////////////////////////////
 
+/**
+* An iterator to the beginning of the parameter list.
+*/
 std::vector<Parameters::Parameter>::iterator Parameters::PARAMETERS_SET::begin()
 {
 	return parent.list.begin();
 }
 
+/**
+* An iterator to the end of the parameter list.
+*/
 std::vector<Parameters::Parameter>::iterator Parameters::PARAMETERS_SET::end()
 {
 	return parent.list.end();
 }
 
+/**
+* Adds a parameter to the list.
+*/
 template<class T>
 void Parameters::PARAMETERS_SET::add( const std::string name, const T value )
 {
@@ -319,6 +395,9 @@ void Parameters::PARAMETERS_SET::add( const std::string name, const T value )
 	parent.list.push_back( p );
 }
 
+/**
+* Removes the named parameter from the list.
+*/
 void Parameters::PARAMETERS_SET::remove( const std::string name )
 {
 	for ( auto it = begin(); end() != it; ++it )
@@ -331,11 +410,17 @@ void Parameters::PARAMETERS_SET::remove( const std::string name )
 	}
 }
 
+/**
+* Removes the parameter at the indicated position from the list.
+*/
 void Parameters::PARAMETERS_SET::remove( const std::size_t index )
 {
 	parent.list.erase( begin() + index );
 }
 
+/**
+* Provides read and write access to a particular parameter in the list.
+*/
 Parameters::Parameter& Parameters::PARAMETERS_SET::at( const std::size_t p )
 {
 	return parent.list.at( p );

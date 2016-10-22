@@ -4,22 +4,35 @@
 #include <thrust\device_ptr.h>
 
 
-#include "CrowdIdentification.h"
 #include <algorithm>
-#include "DataStructures.h"
-#include "ArrayHandle.h"
+#include "CrowdIdentification.h"
+#include "details.h"
+#include "Array.h"
 
 using namespace kspace;
 
+/**
+* A group of functions needed to process the matrix of spin states into spin cluster ids.
+*
+* Importantly the functions have been designed such that they can be called by both device and host processes. 
+* This means that they can be run in parallel given that the appropriate data structures are passed in as parameters.
+*/
 class HELPER
 {
 public:
+	/**
+	* A simple template function for checkign whether the values of two variables are the same.
+	*/
 	template <class T>
 	CUDA_CALLABLE_MEMBER static size_t kronecker_delta( T const & a, T const & b )
 	{
 		return (size_t) ( a == b );
 	}
 
+	/**
+	* Returns the smoothened spin state of a node given its current spin state, the average number of times it flipped in a period of time
+	* and its average state during that same period.
+	*/
 	CUDA_CALLABLE_MEMBER static std::int8_t smooth_state( std::int8_t const & spin_state, double const & flip_average, double const & average_state )
 	{
 		if ( flip_average >= 0.5 )
@@ -41,6 +54,9 @@ public:
 		return spin_state;
 	}
 
+	/**
+	* Calculates the flip and state average of a given node for each time step.
+	*/
 	CUDA_CALLABLE_MEMBER static void smoother_helper( std::int32_t const & node, std::uint32_t const & N, std::uint32_t const & T, std::uint32_t const & window_size, std::int8_t const * spin_states, std::int8_t * smoothed_states )
 	{
 		size_t flip_count = 0;
@@ -90,7 +106,9 @@ public:
 		}
 	}
 
-	//This is BFS that does not use std::queue or vector. Thus it can be used on both the host and device.
+	/**
+	* This is BFS that does not use std::queue or vector. Thus it can be used on both the host and device.
+	*/
 	CUDA_CALLABLE_MEMBER static void partitioner( GRAPH::Graph const & graph, std::int8_t const * spin_states, bool* visited, std::uint32_t* queue, std::uint32_t* offsets, std::uint32_t* partitions, std::int32_t & number_of_partitions )
 	{
 		//Initialise the visited and queue arrays to zero.
@@ -174,6 +192,10 @@ public:
 		number_of_partitions = partition_id;
 	}
 
+	/**
+	* Computes which partition in the previous time step each node is linked to. Nodes which are in the same partition at different times are
+	* part of the same spin cluster.
+	*/
 	CUDA_CALLABLE_MEMBER static void linker( std::uint32_t const & number_of_nodes, std::int32_t const & number_of_partitions, std::int8_t const * spin_states, std::uint32_t const * partitions, std::uint32_t const * offsets, std::uint32_t* similarities, std::int32_t* linklist, std::int32_t & unlinked_count )
 	{
 		uint32_t p1, p2;
@@ -273,6 +295,10 @@ public:
 		}
 	}
 
+	/**
+	* In some cases partitions at time step t can not be linked to any in the previous time step. In that case they are a
+	* a new spin cluster and need to be assigned a new spin_cluster_id. This function finds such partitions and does that.
+	*/
 	CUDA_CALLABLE_MEMBER static void unlinked_linker( std::uint32_t const & number_of_nodes, std::uint32_t const & number_of_partitions, std::int32_t const & unlinked_count, std::int32_t* linklist )
 	{
 		std::int32_t unlinked_count_tmp = unlinked_count;
@@ -289,6 +315,9 @@ public:
 		}
 	}
 
+	/**
+	* Relabels the partition ids of each node into the appropriate spin cluster id.
+	*/
 	CUDA_CALLABLE_MEMBER static void relabeller( std::int32_t const & node, std::uint32_t const & number_of_nodes, std::uint32_t const & wT, std::int32_t const * linklists, std::uint32_t * partitions )
 	{
 		std::int32_t L;
@@ -324,7 +353,12 @@ public:
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Matrix<std::int8_t> CrowdIdentification::HOST::smoothen( Matrix<std::int8_t>& spin_states, size_t const window_size )
+/**
+* Performs a single threaded smoothening of the spin states.
+* @param spin_states reference to a Matrix<int8_t>.
+* @param window_size a size_t integer. The flip and state averages are computed in the interval t-windows_size <= t <= t+window_size.
+*/
+Matrix<std::int8_t>&& CrowdIdentification::CROWD_IDENTIFICATION_HOST::smoothen( Matrix<std::int8_t>& spin_states, size_t const window_size )
 {
 	const size_t N = spin_states.get.number_of_rows();
 	const size_t T = spin_states.get.number_of_columns();
@@ -336,10 +370,16 @@ Matrix<std::int8_t> CrowdIdentification::HOST::smoothen( Matrix<std::int8_t>& sp
 		HELPER::smoother_helper( n, N, T, window_size, spin_states.get.data_ptr(), smoothed_states.set.data_ptr() );
 	}
 
-	return smoothed_states;
+	return std::move(smoothed_states);
 }
 
-Matrix<std::uint32_t> CrowdIdentification::HOST::partition( GRAPH::Graph const & graph, Matrix<std::int8_t>& smooth_spin_states )
+/**
+* Performs a single threaded partitioning of the graph according the spin states.
+* 
+* Each partition is a connected subgraph where every node has the same spin state. The partitions are maximal (as large as they can be while
+* meeting the rules which define the partitioning).
+*/
+Matrix<std::uint32_t>&& CrowdIdentification::CROWD_IDENTIFICATION_HOST::partition( GRAPH::Graph const & graph, Matrix<std::int8_t>& smooth_spin_states )
 {
 	std::uint32_t N = graph.get.number_of_nodes();
 	std::uint32_t T = smooth_spin_states.get.number_of_columns();
@@ -349,10 +389,10 @@ Matrix<std::uint32_t> CrowdIdentification::HOST::partition( GRAPH::Graph const &
 
 	{
 		//During each time step partition the graph into spin clusters.
-		ArrayHandle<std::uint32_t> offsets( N + 1 );
-		ArrayHandle<bool> visited( N );
-		ArrayHandle<std::uint32_t> queue( N );
-		ArrayHandle<std::uint32_t> similarities( N );
+		Array<std::uint32_t> offsets( N + 1 );
+		Array<bool> visited( N );
+		Array<std::uint32_t> queue( N );
+		Array<std::uint32_t> similarities( N );
 
 		std::int32_t number_of_partitions;
 		std::int32_t unlinked_count, unlinked_count_tmp;
@@ -402,13 +442,21 @@ Matrix<std::uint32_t> CrowdIdentification::HOST::partition( GRAPH::Graph const &
 		HELPER::relabeller( node, N, T, linklists.get.data_ptr(), partitions.set.data_ptr() );
 	}
 
-	return partitions;
+	return std::move(partitions);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/**
+* A CUDA kernel for smoothening the spin states.
+* @param N a 32bit unsigned integer. The number of nodes in the graph.
+* @param T a 32bit unsigned integer. The number of time steps spin states were computed for.
+* @param spin_states a pointer to the 1D array containing the spin states.
+* @param window_size a 32bit unsigned integer. The number of time steps on either side of t used for computing the smoothed spin state.
+* @param smoothed_states an pointer to the 1D array to which the smoothed states are written.
+*/
 __global__ void smoothen_device( std::uint32_t const &N, std::uint32_t const &T, std::int8_t const * spin_states, std::uint32_t const & window_size, std::int8_t * smoothed_states )
 {
 	int n = blockIdx.x * blockDim.x + threadIdx.x;
@@ -419,15 +467,31 @@ __global__ void smoothen_device( std::uint32_t const &N, std::uint32_t const &T,
 	}
 }
 
-MatrixShared<std::int8_t> CrowdIdentification::DEVICE::smoothen( Matrix<std::int8_t>& spin_states, std::uint32_t const & window_size )
+/**
+* Manages the resources required to smoothen the spin states on the device.
+*/
+MatrixManager<std::int8_t>&& CrowdIdentification::CROWD_IDENTIFICATION_DEVICE::smoothen( Matrix<std::int8_t>& spin_states, std::uint32_t const & window_size )
 {
-	MatrixShared<std::int8_t> smoothed_states( spin_states.get.number_of_columns(), spin_states.get.number_of_rows() );
+	MatrixManager<std::int8_t> smoothed_states( spin_states.get.number_of_columns(), spin_states.get.number_of_rows() );
 
 	smoothen_device( spin_states.get.number_of_rows(), spin_states.get.number_of_columns(), spin_states.get.data_ptr(), window_size, smoothed_states.device().set.data_ptr() );
 
-	return smoothed_states;
+	return std::move(smoothed_states);
 }
 
+/**
+* A CUDA kernel for computing the paritions for a period of time 'wT'. This is required as VRAM tends to be smaller than RAM, thus is not capable of storing
+* very large matrices. By computing the partitions in blocks we can continue to work with large graphs and long simulation times.
+* @param N a 32bit unsigned integer. The number of nodes in the graph.
+* @param wT a 32bit unsigned integer. The size of the period of time for which the partitions are being computed.
+* @param graph a pointer to the graph stored on the device. Necessary for partition the spin states into spin clusters.
+* @param spin_states a pointer to a matrix represented as 1D array of the spin states.
+* @param visited a pointer to a matrix of bools represented as 1D array. By default the values are false and set to true when a node has been visited during the BFS algorithm.
+* @param queue a pointer to a matrix of unsigned integers represented as 1D array. Node ids are added to the queue one after another when the BFS algorithm visits them.
+* @return offsets a pointer to a matrix of unsigned integers represented as a 1D array. These indicate the position in the similarity matrix a particular partitions similarities begin.
+* @return partitions a pointer to a matrix of signed integers represented as a 1D array. The element (t,n) is the partition id of the node n at time t.
+* @return number_of_partitions a pointer to a 1D array of unsigned integers. Keeps track of the number of partitions in each time step.
+*/
 __global__ void partitioner_device( std::uint32_t const & N, std::uint32_t const & wT, GRAPH::Graph const * graph, std::int8_t const * spin_states, bool* visited, std::uint32_t* queue, std::uint32_t* offsets, std::uint32_t* partitions, std::int32_t * number_of_partitions )
 {
 	int t = blockDim.x * blockIdx.x + threadIdx.x;
@@ -438,6 +502,18 @@ __global__ void partitioner_device( std::uint32_t const & N, std::uint32_t const
 	}
 }
 
+/**
+* A CUDA kernel that computes which partitions in consecutive time steps are linked, i.e. part of the same spin cluster.
+* @param N a 32bit unsigned integer. The number of nodes in the graph.
+* @param wT a 32bit unsigned integer. The size of the period of time for which the partitions are being computed.
+* @param number_of_partitions a pointer to a 1D array of unsigned integers. The number of partitions in each time step.
+* @param spin_states a pointer to a matrix of 8bit integers represented as 1D array of the spin states.
+* @param partitions a pointer to a matrix of signed integers represented as a 1D array. The element (t,n) is the partition id of the node n at time t.
+* @param offsets a pointer to a matrix of unsigned integers represented as a 1D array. These indicate the position in the similarity matrix a particular partitions similarities begin.
+* @param similarities a pointer to a matrix of 32bit unsigned integers represented as 1D array. The elements are the number of nodes that are the same in a pair of partitions in consecutive timesteps.
+* @return linklist a pointer to a matrix of 32bit signed integers represented as 1D array. The element (t, p) is the node id of a node in a partition P that the nodes in partition p at time t are linked to.
+* @return unlinked_count a pointer to a 1D array of 32bit signed integers. Each element is the number of partitions for which there is no link to a partition in the previous time step.
+*/
 __global__ void linker_device( std::uint32_t const & N, std::uint32_t const & wT, std::int32_t const * number_of_partitions, std::int8_t const * spin_states, std::uint32_t const * partitions, std::uint32_t const * offsets, std::uint32_t* similarities, std::int32_t* linklist, std::int32_t * unlinked_count )
 {
 	int t = blockDim.x * blockIdx.x + threadIdx.x;
@@ -448,6 +524,14 @@ __global__ void linker_device( std::uint32_t const & N, std::uint32_t const & wT
 	}
 }
 
+/**
+* Assigns unique spin_cluster_ids for each partition which does not have a link.
+* @param N a 32bit unsigned integer. The number of nodes in the graph.
+* @param wT a 32bit unsigned integer. The size of the period of time for which the partitions are being computed.
+* @param number_of_partitions a pointer to a 1D array of unsigned integers. The number of partitions in each time step.
+* @param unlinked_count a pointer to a 1D array of 32bit signed integers. Each element is the cumulative sum of the unlinked partitions up to the previous time step.
+* @return linklist a pointer to a matrix of 32bit signed integers represented as 1D array. The element (t, p) is the node id of a node in a partition P that the nodes in partition p at time t are linked to.
+*/
 __global__ void unlinked_linker_device( std::uint32_t const & N, std::uint32_t const & wT, std::int32_t const * number_of_partitions, std::int32_t const * unlinked_count, std::int32_t* linklist )
 {
 	int t = blockDim.x * blockIdx.x + threadIdx.x;
@@ -458,6 +542,13 @@ __global__ void unlinked_linker_device( std::uint32_t const & N, std::uint32_t c
 	}
 }
 
+/**
+* Relabels the partition_id of each node to it spin_cluster_id.
+* @param N a 32bit unsigned integer. The number of nodes in the graph.
+* @param wT a 32bit unsigned integer. The size of the period of time for which the partitions are being computed.
+* @return linklist a pointer to a matrix of 32bit signed integers represented as 1D array. The element (t, p) is the node id of a node in a partition P that the nodes in partition p at time t are linked to.
+* @param partitions a pointer to a matrix of signed integers represented as a 1D array. The element (t,n) is the partition id of the node n at time t.
+*/
 __global__ void relabeller_device( std::uint32_t const & N, std::uint32_t const & wT, std::int32_t const * linklists, std::uint32_t* partitions )
 {
 	int n = blockDim.x + blockIdx.x + threadIdx.x;
@@ -468,12 +559,18 @@ __global__ void relabeller_device( std::uint32_t const & N, std::uint32_t const 
 	}
 }
 
-MatrixShared<std::uint32_t> CrowdIdentification::DEVICE::partition( GRAPH::GraphShared const & graph, MatrixShared<std::int8_t>& smooth_spin_states, std::uint32_t const & time_block_size )
+/**
+* Manages the resources for processing the smoothened_spin_states and graph structure to obtain a matrix containing the spin clusters.
+* @param graph a reference to a const GraphManager. This contains a graph which is accessible from both host and device processes and is read only.
+* @param smooth_spin_States a reference to a const MatrixManager<std::int8_t>. This contains a matrix the elements of which are availble to both device and host processes and is read only.
+* @param time_block_size a 32bit unsigned integer. The size of the block that should be processed at one time. Used to limit the memory useage on the device.
+*/
+MatrixManager<std::uint32_t>&& CrowdIdentification::CROWD_IDENTIFICATION_DEVICE::partition( GRAPH::GraphManager const & graph, MatrixManager<std::int8_t> & smooth_spin_states, std::uint32_t const & time_block_size )
 {
 	const std::uint32_t N = smooth_spin_states.host().get.number_of_rows();
 	const std::uint32_t T = smooth_spin_states.host().get.number_of_columns();
 
-	MatrixShared<std::uint32_t> partitions( T, N );
+	MatrixManager<std::uint32_t> partitions( T, N );
 
 	//We create the following matrices with time_block_size columns, to limit the amount memory
 	//being allocated on the device.
@@ -488,7 +585,7 @@ MatrixShared<std::uint32_t> CrowdIdentification::DEVICE::partition( GRAPH::Graph
 	Matrix<std::uint32_t> similarities( time_block_size, N, MemoryLocation::device );
 
 	Matrix<std::int32_t> number_of_partitions( T, 1, MemoryLocation::device );
-	MatrixShared<std::int32_t> unlinked_count( T, 1 );
+	MatrixManager<std::int32_t> unlinked_count( T, 1 );
 
 	//Compute the partitions of the 0-th time step using BFS algorithm.
 	partitioner_device( N, 1, graph.get.device_ptr(), smooth_spin_states.device().get.data_ptr(), visited.set.data_ptr(), queue.set.data_ptr(), offsets.set.data_ptr(), partitions.device().set.data_ptr(), number_of_partitions.set.data_ptr() );
@@ -516,5 +613,5 @@ MatrixShared<std::uint32_t> CrowdIdentification::DEVICE::partition( GRAPH::Graph
 		relabeller_device( N, time_block_size, linklists.get.data_ptr(), partitions.device().set.data_ptr() + offset );
 	}
 
-	return partitions;
+	return std::move(partitions);
 }
