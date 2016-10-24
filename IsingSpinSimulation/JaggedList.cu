@@ -3,6 +3,10 @@
 
 using namespace kspace;
 
+/**
+* Moves the pointers managed by the JaggedList passed to the JaggedList which called this function.
+* @param that a JaggedList.
+*/
 template <class elem_type>
 void JaggedList<elem_type>::move_data( JaggedList<elem_type>&& that )
 {
@@ -23,6 +27,12 @@ void JaggedList<elem_type>::move_data( JaggedList<elem_type>&& that )
 	that.memloc = MemoryLocation::host;
 }
 
+/**
+* Creates N lists each with a length specified in 'lengths' on the device or host as specified.
+* @param N an integer.
+* @param lengths a pointer to an array of length N.
+* @param memloc an enum.
+*/
 template <class elem_type>
 JaggedList<elem_type>::JaggedList( uint32_t const &  N, uint32_t const * lengths, MemoryLocation const & memloc ) : get( *this ), set( *this )
 {
@@ -67,38 +77,64 @@ JaggedList<elem_type>::JaggedList( uint32_t const &  N, uint32_t const * lengths
 	}
 }
 
+/**
+* Frees the memory managed by the JaggedList container.
+*/
 template <class elem_type>
 JaggedList<elem_type>::~JaggedList()
 {
-	( *this ).set.clear();
+	set.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+/**
+* Returns whether the data is stored on the device or host memory.
+* @return an enum.
+*/
 template <class elem_type>
 MemoryLocation JaggedList<elem_type>::JAGGED_LIST_GET::memory_location() const
 {
 	return parent.memloc;
 }
 
+/**
+* Read only access to the array storing the data.
+* @return a pointer to a const elem_type.
+*/
 template <class elem_type>
 elem_type const * JaggedList<elem_type>::JAGGED_LIST_GET::data_ptr() const
 {
 	return parent.data_ptr;
 }
 
+/**
+* Read only access to the array storing the list lengths.
+* @return a pointer to a const uint32_t.
+*/
 template <class elem_type>
 std::uint32_t const * JaggedList<elem_type>::JAGGED_LIST_GET::lengths_ptr() const
 {
 	return parent.lengths_ptr;
 }
 
+/**
+* Read only access to the array storing the offsets.
+* @return a pointer to a const uint32_t.
+*/
 template <class elem_type>
 uint32_t const * JaggedList<elem_type>::JAGGED_LIST_GET::offsets_ptr() const
 {
 	return parent.offsets_ptr;
 }
 
+/**
+* Read only access to an element in a specified list.
+*
+* Both the list_id and index are checked to see if they are out of range.
+* @param list_id an integer.
+* @param index an integer.
+* @return a reference to a const elem_type.
+*/
 template <class elem_type>
 elem_type const & JaggedList<elem_type>::JAGGED_LIST_GET::operator()( uint32_t const list_id, uint32_t const index ) const
 {
@@ -110,12 +146,21 @@ elem_type const & JaggedList<elem_type>::JAGGED_LIST_GET::operator()( uint32_t c
 	return parent.data_ptr[ offset( list_id ) + index ];
 }
 
+/**
+* Read only access to the number of lists.
+* @return an integer.
+*/
 template <class elem_type>
 uint32_t const & JaggedList<elem_type>::JAGGED_LIST_GET::size() const
 {
 	return *parent.size;
 }
 
+/**
+* Read only access to the number of elements in a specified list.
+* @param list_id an integer.
+* @return an integer.
+*/
 template <class elem_type>
 uint32_t const & JaggedList<elem_type>::JAGGED_LIST_GET::length( uint32_t const list_id ) const
 {
@@ -127,6 +172,11 @@ uint32_t const & JaggedList<elem_type>::JAGGED_LIST_GET::length( uint32_t const 
 	return *parent.size_flat;
 }
 
+/**
+* Read only access to the offset at which a specified list starts in the array of elements.
+* @param list_id an integer.
+* @return an integer.
+*/
 template <class elem_type>
 uint32_t const & JaggedList<elem_type>::JAGGED_LIST_GET::offset( const uint32_t list_id ) const
 {
@@ -140,24 +190,44 @@ uint32_t const & JaggedList<elem_type>::JAGGED_LIST_GET::offset( const uint32_t 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/**
+* Read and write access to the array storing the data.
+* @return a pointer to a const elem_type.
+*/
 template <class elem_type>
 elem_type* JaggedList<elem_type>::JAGGED_LIST_SET::data_ptr()
 {
 	return parent.data_ptr;
 }
 
+/**
+* Read and write access to the array storing the list lengths.
+* @return a pointer to a const uint32_t.
+*/
 template <class elem_type>
 uint32_t* JaggedList<elem_type>::JAGGED_LIST_SET::lengths_ptr()
 {
 	return parent.lengths_ptr;
 }
 
+/**
+* Read and write access to the array storing the offsets.
+* @return a pointer to a const uint32_t.
+*/
 template <class elem_type>
 uint32_t* JaggedList<elem_type>::JAGGED_LIST_SET::offsets_ptr()
 {
 	return parent.offsets_ptr;
 }
 
+/**
+* Read and write access to an element in a specified list.
+*
+* Both the list_id and index are checked to see if they are out of range.
+* @param list_id an integer.
+* @param index an integer.
+* @return a reference to a const elem_type.
+*/
 template <class elem_type>
 elem_type& JaggedList<elem_type>::JAGGED_LIST_SET::operator()( const uint32_t list_id, const uint32_t index )
 {
@@ -169,6 +239,9 @@ elem_type& JaggedList<elem_type>::JAGGED_LIST_SET::operator()( const uint32_t li
 	return parent.data_ptr[ parent.get.offset( list_id ) + index ];
 }
 
+/**
+* Frees the resources managed by the JaggedList.
+*/
 template <class elem_type>
 void JaggedList<elem_type>::JAGGED_LIST_SET::clear()
 {

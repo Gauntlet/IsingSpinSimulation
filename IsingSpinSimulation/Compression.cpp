@@ -4,36 +4,55 @@
 using namespace kspace;
 using namespace FILEIO;
 
-Compression::Compressed_Data Compression::deflate( const ArrayHandle& uncompressed_data )
+/**
+* Compresses the passed array using the zlib library.
+* @param uncompressed_array an Array<std::uint8_t> of uncompressed data.
+* @return a Compressed_Data structure containing the compressed array and details.
+*/
+Compression::Compressed_Data Compression::deflate( Array<std::uint8_t> const & uncompressed_data )
 {
-	ArrayHandle	compressed_data( uncompressed_data.get.size()*1.1 + 12 );
-	
-	int return_code = compress( compressed_data.set.data(), compressed_data.set.size(), uncompressed_data.get.data(), uncompressed_data.get.size() );
+	Compression::Compressed_Data cdata;
 
-	switch ( return_code )
+	if ( MemoryLocation::host == uncompressed_data.get.memory_location() )
 	{
-	case Z_MEM_ERROR:
-		throw std::runtime_error( "Out of memory while compressing data!" );
-		break;
-	case Z_BUF_ERROR:
-		throw std::runtime_error( "Compress output buffer was not large enough!" );
-		break;
+		Array<std::uint8_t> compressed_data( uncompressed_data.get.size()*1.1 + 12 );
+
+		int return_code = compress( compressed_data.set.data_ptr(), &compressed_data.set.size(), uncompressed_data.get.data(), uncompressed_data.get.size() );
+
+		switch ( return_code )
+		{
+			case Z_MEM_ERROR:
+				throw std::runtime_error( "Out of memory while compressing data!" );
+				break;
+			case Z_BUF_ERROR:
+				throw std::runtime_error( "Compress output buffer was not large enough!" );
+				break;
+		}
+
+		Details details;
+		details.uncompressed_data_size = uncompressed_data.get.size();
+		details.bitpacked_data_size = uncompressed_data.get.size();
+		details.compressed_data_size = compressed_data.get.size();
+		details.bits.zerobit = 0;
+		details.bits.unitbit = 0;
+
+		cdata.data = std::move(compressed_data);
+		cdata.details = details;
 	}
-
-	Details details;
-	details.uncompressed_data_size = uncompressed_data.get.size();
-	details.bitpacked_data_size = uncompressed_data.get.size();
-	details.compressed_data_size = compressed_data.get.size();
-	details.bits.zerobit = 0;
-	details.bits.unitbit = 0;
-
-	return Compression::Compressed_Data( compressed_data, details );
+	
+	return cdata;
 }
 
-Compression::Compressed_Data Compression::deflate( const ArrayHandle& uncompressed_data, const Compression::Bits& bits )
+/**
+* Bit packs the passed Array and then uses the zlib library to compress the bitpacked data.
+* @param uncompressed_data an Array<std::uint8_t> of uncompressed data.
+* @param bits contains the value of the 0 and 1 bits.
+* @return a Compressed_Data structure containing the compressed array and details.
+*/
+Compression::Compressed_Data Compression::deflate( Array<std::uint8_t> const & uncompressed_data, Compression::Bits const & bits )
 {
 	//First bitpack the data.
-	ArrayHandle bitpacked_data = bit_pack( uncompressed_data, bits );
+	Array<std::uint8_t> bitpacked_data = bit_pack( uncompressed_data, bits );
 	//Now compress the bitpacked data.
 	Compressed_Data compressed_data = deflate( bitpacked_data );
 	//Change the values of uncompressed_data_size and bits in the details structure to the correct values
@@ -43,11 +62,17 @@ Compression::Compressed_Data Compression::deflate( const ArrayHandle& uncompress
 	return compressed_data;
 }
 
-ArrayHandle Compression::inflate( const ArrayHandle& compressed_data, const Compression::Details &details )
+/**
+* Uncompresses compressed data using the zlib library.
+* @param compressed_data.
+* @param details a struct that contains the sizes of the compressed, bitpacked and uncompressed data.
+* @param uncompressed data.
+*/
+Array<std::uint8_t> Compression::inflate( Array<std::uint8_t> const & compressed_data, const Compression::Details &details )
 {
 	//First decompress the data into its unpacked state.
-	ArrayHandle uncompressed_data( details.bitpacked_data_size );
-	int return_code = uncompress( uncompressed_data.set.data(), uncompressed_data.set.size(), compressed_data.get.data(), compressed_data.get.size() );
+	Array<std::uint8_t> uncompressed_data( details.bitpacked_data_size );
+	int return_code = uncompress( uncompressed_data.set.data_ptr(), &uncompressed_data.set.size(), compressed_data.get.data(), compressed_data.get.size() );
 
 	switch ( return_code )
 	{
@@ -71,7 +96,7 @@ ArrayHandle Compression::inflate( const ArrayHandle& compressed_data, const Comp
 		}
 
 		//Unpack the data and return it.
-		ArrayHandle unpacked_data = bit_unpack( unpacked_data, tmpdet );
+		Array<std::uint8_t> unpacked_data = bit_unpack( unpacked_data, tmpdet );
 		return unpacked_data;
 	}
 
@@ -79,17 +104,23 @@ ArrayHandle Compression::inflate( const ArrayHandle& compressed_data, const Comp
 	return uncompressed_data;
 }
 
-
-ArrayHandle Compression::bit_pack( const ArrayHandle &uncompressed_data, const Compression::Bits &bits )
+/**
+* Takes an array of binary data and packs them into bytes. Essentially this reduces the data size by a factor of 8 before
+* any compression has occurred.
+* @param uncompressed_data.
+* @param bits.
+* @return bitpacked data.
+*/
+Array<std::uint8_t> Compression::bit_pack( Array<std::uint8_t> const & uncompressed_data, Compression::Bits const & bits )
 {
-	ArrayHandle bitpacked_data( ( uncompressed_data.get.size() / 8 ) + 1 );
+	Array<std::uint8_t> bitpacked_data( ( uncompressed_data.get.size() / 8 ) + 1 );
 
 	for ( std::size_t i = 0; i < uncompressed_data.get.size(); ++i )
 	{
 		std::size_t j = i / 8;
 		std::size_t k = i % 8;
 
-		if ( uncompressed_data.get.data( i ) > 0 )
+		if ( uncompressed_data.get( i ) > 0 )
 		{
 			bitpacked_data.set.data[ j ] |= 1 << k;
 		}
@@ -98,9 +129,15 @@ ArrayHandle Compression::bit_pack( const ArrayHandle &uncompressed_data, const C
 	return bitpacked_data;
 }
 
-ArrayHandle Compression::bit_unpack( const ArrayHandle &bitpacked_data, const Compression::Details &details )
+/**
+* Unpacks an array of bitpacked data.
+* @param bitpacked_data.
+* @param details.
+* @return unbitpacked data.
+*/
+Array<std::uint8_t> Compression::bit_unpack( Array<std::uint8_t> const & bitpacked_data, Compression::Details const & details )
 {
-	ArrayHandle uncompressed_data( details.uncompressed_data_size);
+	Array<std::uint8_t> uncompressed_data( details.uncompressed_data_size);
 
 	for ( std::size_t i = 0; i < bitpacked_data.get.size(); ++i )
 	{
@@ -109,7 +146,7 @@ ArrayHandle Compression::bit_unpack( const ArrayHandle &bitpacked_data, const Co
 			std::size_t k = i * 8 + j;
 			if ( k < uncompressed_data.get.size() )
 			{
-				const std::uint8_t byte = *bitpacked_data.get.data( i );
+				const std::uint8_t byte = bitpacked_data.get( i );
 				if ( 1 == ( ( byte >> j ) & 1 ) )
 				{
 					uncompressed_data.set.data[ k ] = details.bits.unitbit;

@@ -3,12 +3,22 @@
 
 using namespace kspace;
 
+/**
+* Creates a number_of_columns x number_of_rows Matrix on the host with the data stored on the host.
+* @param number_of_columns an integer.
+* @param number_of_rows an integer.
+*/
 template <class elem_type>
 void MatrixManager<elem_type>::initialise_host( const uint32_t number_of_columns, const uint32_t number_of_rows )
 {
 	host_ptr = new Matrix( number_of_columns, number_of_rows, MemoryLocation::host );
 }
 
+/**
+* Creates a number_of_columns x number_of_rows Matrix on the host with the data stored on the device.
+* @param number_of_columns an integer.
+* @param number_of_rows an integer.
+*/
 template <class elem_type>
 void MatrixManager<elem_type>::initialise_intermediary( const uint32_t number_of_columns, const uint32_t number_of_rows )
 {
@@ -21,6 +31,9 @@ void MatrixManager<elem_type>::initialise_intermediary( const uint32_t number_of
 	HANDLE_ERROR( cudaMalloc( intermediary().number_of_rows, host().get.number_of_rows(), sizeof( uint32_t ), cudaMemcpyHostToDevice ) );
 }
 
+/**
+* Creates a Matrix on the device which handles the same pointers as the intermediary Matrix.
+*/
 template <class elem_type>
 void MatrixManager<elem_type>::initialise_device()
 {
@@ -31,6 +44,9 @@ void MatrixManager<elem_type>::initialise_device()
 	HANDLE_ERROR( cudaMemcpy( device_ptr, intermediary_ptr, sizeof( Matrix<elem_type> ), cudaMemcpyHostToDevice ) );
 }
 
+/**
+* Moves the pointers of the data stored in another MatrixManager object to this one.
+*/
 template <class elem_type>
 void MatrixManager<elem_type>::move_data( MatrixManager<elem_type>&& that )
 {
@@ -45,6 +61,10 @@ void MatrixManager<elem_type>::move_data( MatrixManager<elem_type>&& that )
 	that.device_ptr = nullptr;
 }
 
+/**
+* Moves the pointers of the data stored in Matrix object and creates the appropriate missing
+* Matrices.
+*/
 template <class elem_type>
 void MatrixManager<elem_type>::move_data( Matrix<elem_type>&& that )
 {
@@ -70,6 +90,9 @@ void MatrixManager<elem_type>::move_data( Matrix<elem_type>&& that )
 	}
 }
 
+/**
+* Frees the memory used by the matrices manged by this MatrixManager object.
+*/
 template <class elem_type>
 void MatrixManager<elem_type>::clear()
 {
@@ -89,6 +112,19 @@ void MatrixManager<elem_type>::clear()
 	}
 }
 
+/**
+* Returns a reference to the intermediary Matrix object.
+*/
+template <class elem_type>
+Matrix<elem_type>& MatrixManager<elem_type>::intermediary()
+{
+	return *intermediary_ptr;
+}
+
+/**
+* Creates a square NxN matrix on the host and device.
+* @param N a 4 byte integer.
+*/
 template <class elem_type>
 MatrixManager<elem_type>::MatrixManager(const std::uint32_t N)
 {
@@ -97,6 +133,11 @@ MatrixManager<elem_type>::MatrixManager(const std::uint32_t N)
 	initialise_device();
 }
 
+/**
+* Creates a rectangular number_of_columns x number_of_rows matrix on the host and device.
+* @param number_of_columns a 4 byte integer.
+* @param number_of_rows a 4 byte integer.
+*/
 template <class elem_type>
 MatrixManager<elem_type>::MatrixManager( const uint32_t number_of_columns, const uint32_t number_of_rows )
 {
@@ -105,18 +146,39 @@ MatrixManager<elem_type>::MatrixManager( const uint32_t number_of_columns, const
 	initialise_device();
 }
 
+/**
+* Frees the memory used by the Matrices managed by this MatrixManager object.
+*/
 template <class elem_type>
 MatrixManager::~MatrixManager()
 {
 	clear();
 }
 
+/**
+* Moves the pointers to the Matrices managed by the passed MatrixManager to the one being constructed.
+* @param that a MatrixManager object.
+*/
+template <class elem_type>
+MatrixManager<elem_type>::MatrixManager( MatrixManager<elem_type>&& that )
+{
+	move_data( that );
+}
+
+/**
+* Moves the pointers to the Matrices managed by the MatrixManager being constructed.
+* @param that a MatrixManager object.
+*/
 template<class elem_type>
 MatrixManager<elem_type>::MatrixManager( Matrix<elem_type>&& that )
 {
 	move_data( that );
 }
 
+/**
+* Moves the pointers to the Matrix on the RHS to the MatrixManager on the LHS
+* @param that a MatrixManager object.
+*/
 template<class elem_type>
 MatrixManager<elem_type>& MatrixManager<elem_type>::operator=( Matrix<elem_type>&& that )
 {
@@ -124,12 +186,49 @@ MatrixManager<elem_type>& MatrixManager<elem_type>::operator=( Matrix<elem_type>
 	return *this;
 }
 
+/**
+* Moves data from the Matrix object passed into ones intialised and managed by the MatrixManager object being constructed.
+* @param that a Matrix object.
+*/
+template<class elem_type>
+MatrixManager<elem_type>& MatrixManager<elem_type>::operator=( Matrix<elem_type>&& that )
+{
+	move_data( that );
+	return *this;
+}
+
+/**
+* Access to the Matrix data stored on the host.
+* @return reference to a Matrix.
+*/
+template <class elem_type>
+Matrix<elem_type>& MatrixManager<elem_type>::host() 
+{ 
+	return *host_ptr; 
+}
+
+/**
+* Access to the Matrix data stored on the device.
+* @return reference to a Matrix.
+*/
+template <class elem_type>
+Matrix<elem_type>& Matrix<elem_type>::device() 
+{ 
+	return *device_ptr; 
+}
+
+/**
+* Copies the values of the elements of the matrix to the device from the host.
+*/
 template <class elem_type>
 void MatrixManager<elem_type>::host2device()
 {
 	HANDLE_ERROR( cudaMalloc( intermediary().data_ptr, host().get.data_ptr(), sizeof( elem_type ) * host().get.length(), cudaMemcpyHostToDevice ) );
 }
 
+/**
+* Copies the values of the elements of the matrix to the host from the device.
+*/
 template <class elem_type>
 void MatrixManager<elem_type>::device2host()
 {

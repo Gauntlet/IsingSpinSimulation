@@ -87,7 +87,8 @@ namespace kspace
 		protected:
 			/**
 			* Contains the resources required for representing the graph.
-			* Useful when loading from file.
+			* We use this method as it is useful when loading from file
+			* when constructing graphs from scratch.
 			*/
 			class Data
 			{
@@ -109,15 +110,15 @@ namespace kspace
 				*/
 				Data() : number_of_nodes( nullptr ), adjmat( nullptr ), adjlist( nullptr ), degrees( nullptr ), offsets( nullptr ), memloc( MemoryLocation::host ) {};
 
-				~Data(); /**< Frees the resources being managed. */
+				~Data(); 
 
 				Data( Data const  & ) = delete; /**< Delete the copy constructor.*/
 				Data& operator=( Data const & ) = delete; /**< Delete the copy assignment operator. */
 
-				Data( Data&& that ); /**< Moves the resources managed by the passed Data object to the one being constructed. */
-				Data& operator=( Data&& that ); /**< Moves the resources managed by the Data object on the RHS to the one on the LHS. */
+				Data( Data&& that );
+				Data& operator=( Data&& that );
 
-				void clear(); /**< Frees the resources being managed.	*/
+				void clear();
 			} data;
 
 			/**
@@ -130,19 +131,19 @@ namespace kspace
 				/**< On construction the Graph to which private member access is available is set. */
 				GRAPH_GET( const Graph& parent ) : parent( parent ) {};
 
-				int32_t const & number_of_nodes() const; /**< The number of nodes in the graph. */
-				int32_t const & degree( const uint32_t v ) const; /**< The degree of the specified node. @param v an uint32_t node id. */
-				std::uint32_t const & offset(const size_t v) const; /**< The index in the adjacency list where the list of neighbours for the specified node begins. @param v an uint32_t node id. */
+				int32_t const & number_of_nodes() const; 
+				int32_t const & degree( const uint32_t v ) const; 
+				std::uint32_t const & offset(const size_t v) const;
 
-				bool const & is_connected( const uint32_t v, const uint32_t w ) const; /**< Returns whether two vertices are connected by an edge. @param v an uint32_t node id. @param w an uint32_t node id.*/
-				int32_t const & neighbour(const uint32_t v, const uint32_t kth_neighbour) const; /**< Returns the k-th neighbour of the specified node. @param v an uint32_t node id. @param kth_neighbour an uint32_t list index. */
+				bool const & is_connected( const uint32_t v, const uint32_t w ) const;
+				int32_t const & neighbour(const uint32_t v, const uint32_t kth_neighbour) const;
 
-				MemoryLocation const & memory_location() const; /**< Returns the memory location of the resources being managed. */
+				MemoryLocation const & memory_location() const;
 
-				std::uint8_t const * adjmat() const; /**< A pointer to the read only adjacency matrix array. */
-				std::int32_t const * adjlist() const; /**< A pointer to the read only adjacency list array. */
-				std::int32_t const * degrees() const; /**< A pointer to the read only degrees array. */
-				std::uint32_t const * offsets() const; /**< A pointer to the read only offsets array. */
+				std::uint8_t const * adjmat() const;
+				std::int32_t const * adjlist() const;
+				std::int32_t const * degrees() const;
+				std::uint32_t const * offsets() const;
 			};
 
 			/**
@@ -155,16 +156,14 @@ namespace kspace
 				/**< On construction the Graph to which private member access is available is set. */
 				GRAPH_SET( Graph& parent ) : parent( parent ) {};
 
-				std::uint8_t* adjmat() const;	/**< A pointer to the adjacency matrix array. */
-				std::int32_t* adjlist() const;	/**< A pointer to the adjacency list array. */
-				std::int32_t* degrees() const;	/**< A pointer to the degrees array. */
-				std::uint32_t* offsets() const;	/**< A pointer to the offsets array. */
+				std::uint8_t* adjmat() const;
+				std::int32_t* adjlist() const;
+				std::int32_t* degrees() const;
+				std::uint32_t* offsets() const;
 			};
 
-			/**
-			* A helper function which reads the graph data stored in a file and reconstructs it.
-			*/
 			Graph::Data&& readData( const FILEIO::FileHandle &file );
+			void initialise( Data& data, MemoryLocation const & memloc );
 		public:
 
 			/**
@@ -180,12 +179,9 @@ namespace kspace
 
 			Graph();
 
-			/**
-			* On construction a Graph loads data from a file given by 'fname' and stored in the device or host memory as indicated.
-			* @param fname a std::string containing the full path to a kgraph file.
-			* @param memloc a enum indicating whether the graph data should be accessible by device or host processes.
-			*/
-			Graph( const std::string fname, const MemoryLocation memloc );
+			
+			Graph( std::string const & fname, MemoryLocation const & memloc );
+			Graph( Data& data, MemoryLocation const & memloc );
 		};
 	}
 }

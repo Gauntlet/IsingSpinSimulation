@@ -8,6 +8,9 @@ namespace kspace
 {
 	namespace FILEIO
 	{
+		/**
+		* This class is a wrapper for compressing and uncompressing data stored in an Array.
+		*/
 		class Compression
 		{
 		public:
@@ -31,18 +34,19 @@ namespace kspace
 				Array<std::uint8_t> data;
 				Details details;
 
+				Compressed_Data();
 				Compressed_Data( Compressed_Data&& that ) : data( std::move( that.data ) ), details( that.details ) {};
 				Compressed_Data( Array<std::uint8_t> &data, Details &details ) : data( std::move( data ) ), details( details ) {};
 			};
 
-			Compressed_Data deflate( const Array<std::uint8_t>& uncompressed_data );
-			Compressed_Data deflate( const Array<std::uint8_t>& uncompressed_data, const Bits& bits );
+			Compressed_Data deflate( Array<std::uint8_t> const & uncompressed_data );
+			Compressed_Data deflate( Array<std::uint8_t> const & uncompressed_data, Bits const & bits );
 
-			Array<std::uint8_t> inflate( const Array<std::uint8_t>& compressed_data, const Details& details );
+			Array<std::uint8_t> inflate( Array<std::uint8_t> const & compressed_data, Details const & details );
 
 		protected:
-			Array<std::uint8_t> bit_pack( const Array<std::uint8_t> &uncompressed_data, const Bits &bits );
-			Array<std::uint8_t> bit_unpack( const Array<std::uint8_t> &bitpacked_data, const Details &details );
+			Array<std::uint8_t> bit_pack( Array<std::uint8_t> const & uncompressed_data, Bits const & bits );
+			Array<std::uint8_t> bit_unpack( Array<std::uint8_t> const & bitpacked_data, Details const & details );
 		};
 	}
 }
